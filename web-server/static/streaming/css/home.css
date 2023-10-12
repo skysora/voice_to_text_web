@@ -1,0 +1,60 @@
+* {
+padding: 0;
+margin: 0;
+box-sizing: border-box;
+}
+html {
+font-family: "Montserrat";
+font-size: 20px;
+}
+section {
+min-height: 100vh;
+width: 100%;
+display: flex;
+align-items: flex-start;
+background-color: rgb(37, 37, 37);
+flex-direction: column;
+padding: 50px 0;
+}
+section h1 {
+color: rgba(255, 255, 255, 0.322);
+text-align: center;
+width: 100%;
+font-size: 50px;
+margin-bottom: 10px;
+}
+section p {
+text-align: center;
+color: rgba(255, 255, 255, 0.322);
+width: 100%;
+margin-bottom: 40px;
+}
+.container {
+width: 90%;
+max-width: 500px;
+margin: 0 auto;
+justify-content: center;
+}
+.texts p {
+color: black;
+text-align: left;
+width: 100%;
+background-color: white;
+padding: 10px;
+border-radius: 8px;
+margin-bottom: 10px;
+}
+.texts p.replay {
+text-align: right;
+}
+
+.custom-button {
+    margin: 0 auto; /* 设置左右外边距为自动，实现水平居中 */
+    padding: 10px 20px; /* 按钮内边距 */
+    font-size: 16px; /* 字体大小 */
+    background-color: #007bff; /* 背景颜色 */
+    color: #fff; /* 文字颜色 */
+    border: none; /* 去除边框 */
+    border-radius: 5px; /* 圆角边框 */
+    cursor: pointer; /* 鼠标指针样式 */
+}

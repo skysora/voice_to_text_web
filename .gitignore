@@ -1,0 +1,8 @@
+/web-server/region
+/web-server/key
+/web-server/test.ipynb
+/web-server/token.json
+/web-server/data/*
+/web-server/emotionResult/*
+/web-server/speechResult/*
+/web-server/submitFile/*
