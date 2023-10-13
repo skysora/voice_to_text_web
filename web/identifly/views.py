@@ -1,63 +1,23 @@
-
-from flask import Flask, request, redirect, url_for,render_template,send_file, jsonify
+# identifly.py
+from flask import Blueprint,Flask, request, redirect, url_for,render_template,send_file, jsonify
 import os
-import time
-import os
-import subprocess
 import json
-from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient,BlobServiceClient,generate_container_sas,BlobSasPermissions
+import subprocess
 from hume import HumeBatchClient
-from hume.models.config import BurstConfig,LanguageConfig,ProsodyConfig
-
 from datetime import datetime, timedelta
+from hume.models.config import BurstConfig,LanguageConfig,ProsodyConfig
 import shutil
 
-
-app = Flask(__name__)
-app.debug = True
+identifly_blueprint = Blueprint('identifly', __name__, template_folder='templates')
 UPLOAD_FOLDER = './data/'
 SPEECH_RESULT_FOLDER = './speechResult/'
 SUMIT_FOLDER = './submitFile/'
 EMOTION_RESULT_FOLDER = './emotionResult/'
 
 
-@app.route("/", methods=['GET','POST'])
-def azure():
-    data={}
-    file_list=os.listdir(UPLOAD_FOLDER)
-    result_list=os.listdir(SPEECH_RESULT_FOLDER)
-    start=0
-    end = min(len(file_list),10)
-    page_number = 1
-    if request.method == 'POST':
-        page_number = request.json['page_number']
-        start = (page_number-1)*10
-        end = min(len(file_list),page_number*10)
-    
-    with open('output.txt', 'w') as file:
-        # 写入内容到文件
-        file.write(f'start:{start}\n')
-        file.write(f'end:{end}\n')
-        
-    for i in range(start,end):
-        
-        data[file_list[i]] = {}
-        if(file_list[i].replace('.mp3','') in result_list):
-            data[file_list[i]]['status'] = "Finish"
-        else:
-            data[file_list[i]]['status'] = "NotYet"
-            
-    return render_template('azure.html',data=data,file_list = file_list[(page_number-1)*10:page_number*10],file_list_number=len(file_list),currentPage=page_number)
-    
 
-@app.route("/voice")
-def voice():
-    return render_template('voice.html')
-
-
-
-@app.route('/upload_file', methods=['POST'])
+@identifly_blueprint.route('/upload_file', methods=['POST'])
 def upload_file():
     # Iterate for each file in the files List, and Save them
     files = request.files.getlist('files[]')
@@ -66,22 +26,24 @@ def upload_file():
         filename = file.filename
         file.save(os.path.join(UPLOAD_FOLDER, filename))
     
-    return redirect(url_for('azure'))
+    return redirect(url_for('view.azure'))
     
-@app.route('/download_file', methods=['get'])
+    
+    
+@identifly_blueprint.route('/download_file', methods=['get'])
 def download_file():
     file_name = request.args.get('name')
     return send_file(f'{UPLOAD_FOLDER}{file_name}',as_attachment=True)
 
 
-@app.route('/delete_file', methods=['get'])
+@identifly_blueprint.route('/delete_file', methods=['get'])
 def delete_file():
     file_name = request.args.get('name')
     os.remove(f'{UPLOAD_FOLDER}{file_name}')
-    return redirect(url_for('azure'))
+    return redirect(url_for('view.azure'))
 
 
-@app.route('/insert_file_idenitfy', methods=['get'])
+@identifly_blueprint.route('/insert_file_idenitfy', methods=['get'])
 def insert_file_idenitfy():
     file_name = request.args.get('name')
     
@@ -190,7 +152,7 @@ def emotion_identify(file_name):
     ConvertUTF8(f'{EMOTION_RESULT_FOLDER}{file_name}/language.json')
 
     
-@app.route('/speech_idenitfy_download', methods=['get'])
+@identifly_blueprint.route('/speech_idenitfy_download', methods=['get'])
 def speech_idenitfy_download():
     
     file_name = request.args.get('name')
@@ -233,7 +195,7 @@ def speech_idenitfy_download():
     return send_file(f'{SPEECH_RESULT_FOLDER}{file_name}.json',as_attachment=True)
 
 
-@app.route('/emotion_idenitfy_download', methods=['get'])
+@identifly_blueprint.route('/emotion_idenitfy_download', methods=['get'])
 def emotion_idenitfy_download():
     file_name = request.args.get('name')
     emotion_result_list=os.listdir(EMOTION_RESULT_FOLDER)
@@ -247,6 +209,3 @@ def emotion_idenitfy_download():
     return send_file(f'{EMOTION_RESULT_FOLDER}{file_name}.zip',as_attachment=True)
     
     
-    
-if __name__ == '__main__':
-    app.run()
