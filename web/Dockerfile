@@ -17,9 +17,6 @@ gstreamer1.0-plugins-ugly -y
 
 ENV PATH="${PATH}:/root/.dotnet/tools"
 
-RUN spx config @key --set a255b150359e4b37be57dce02c44d1c0
-RUN spx config @region --set eastus
-
 RUN apt install python3.8-distutils -y
 
 RUN apt install python3.8 -y
