@@ -3,7 +3,6 @@ from datetime import timedelta
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-
 def create_sqlite_uri(db_name):
     return "sqlite:///" + os.path.join(basedir, db_name)
 
@@ -25,16 +24,15 @@ class DevelopmentConfig(BaseConfig):
 
 
 class TestingConfig(BaseConfig):
-    TESTING = True
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_DATABASE_URI = create_sqlite_uri("test.db")
-    TEMPLATES_FOLDER = './app/'
-    WTF_CSRF_ENABLED = False
-    UPLOAD_FOLDER = './data/'
-    SPEECH_RESULT_FOLDER = './speechResult/'
-    SUMIT_FOLDER = './submitFile/'
-    EMOTION_RESULT_FOLDER = './emotionResult/'
-
+    # SECRET_KEY
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'A-VERY-LONG-SECTRET-KEY'
+    #RECAPTCHA_PUBLIC_KEY
+    RECAPTCHA_PUBLIC_KEY = os.environ.get('RECAPTCHA_PUBLIC_KEY') or 'A-VERY-LONG-SECTRET-KEY'
+    RECAPTCHA_PRIVATE_KEY = os.environ.get('RECAPTCHA_PRIVATE_KEY') or 'A-VERY-LONG-SECTRET-KEY'
+    
+    
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(basedir,'app.db')
+    SQLALCHEMY_TRACK_MODIFICATIONS= False
 
 config = {
     'development': DevelopmentConfig,

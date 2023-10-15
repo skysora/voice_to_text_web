@@ -17,7 +17,7 @@ EMOTION_RESULT_FOLDER = './data/emotionResult/'
 
 
 
-@view_blueprint.route("/", methods=['GET','POST'])
+@view_blueprint.route("/main", methods=['GET','POST'])
 def azure():
     data={}
     file_list=os.listdir(UPLOAD_FOLDER)

@@ -19,7 +19,9 @@ RUN apt-get install wget -y
 RUN wget https://bootstrap.pypa.io/get-pip.py
 RUN python3.8 get-pip.py
 COPY ./requirements.txt /requirements.txt 
+COPY ./packages/flask-login /packages/flask-login 
 RUN pip3 install -r /requirements.txt
+RUN pip3 install ./packages/flask-login
 RUN apt install vim -y
 
 
