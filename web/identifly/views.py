@@ -8,12 +8,14 @@ from hume import HumeBatchClient
 from datetime import datetime, timedelta
 from hume.models.config import BurstConfig,LanguageConfig,ProsodyConfig
 import shutil
+import threading
+
 
 identifly_blueprint = Blueprint('identifly', __name__, template_folder='templates')
-UPLOAD_FOLDER = './data/'
-SPEECH_RESULT_FOLDER = './speechResult/'
-SUMIT_FOLDER = './submitFile/'
-EMOTION_RESULT_FOLDER = './emotionResult/'
+UPLOAD_FOLDER = './data/signal/'
+SPEECH_RESULT_FOLDER = './data/speechResult/'
+SUMIT_FOLDER = './data/submitFile/'
+EMOTION_RESULT_FOLDER = './data/emotionResult/'
 
 
 
@@ -27,9 +29,7 @@ def upload_file():
         file.save(os.path.join(UPLOAD_FOLDER, filename))
     
     return redirect(url_for('view.azure'))
-    
-    
-    
+      
 @identifly_blueprint.route('/download_file', methods=['get'])
 def download_file():
     file_name = request.args.get('name')
@@ -50,6 +50,11 @@ def insert_file_idenitfy():
     with open('token.json', 'r') as file:
         data = json.load(file)
         
+    command  = f'/root/.dotnet/tools/spx config @key --set {data["voiceKey"]}'
+    result = subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    command  = f'/root/.dotnet/tools/spx config @region --set {data["voiceLocation"]}'
+    result = subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    
     # upload file to cloud
     blob_service_client = BlobServiceClient.from_connection_string(data['blob_service_client_string'])
     upload_file_path = os.path.join(UPLOAD_FOLDER, file_name)
@@ -62,21 +67,15 @@ def insert_file_idenitfy():
         pass
     
     
-    # # SPEECH IDENTIFY
+    # SPEECH IDENTIFY
     submit_list=os.listdir(SUMIT_FOLDER)
-    if(f'{file_name}.json' in submit_list):
-        return redirect(url_for('azure'))
-    else:
+    if(f'{file_name}.json' not in submit_list):
         speech_idenitfy(file_name)
         
-    # EMOTION IDENTIFY
-    emotion_result_list=os.listdir(EMOTION_RESULT_FOLDER)
-    if(f'{file_name}' in emotion_result_list):
-        return redirect(url_for('azure'))
-    else:
-        emotion_identify(file_name)
-        
-    return redirect(url_for('azure'))
+    task_thread = threading.Thread(target=emotion_identify,args=((file_name,)))
+    task_thread.start()
+    
+    return redirect(url_for('view.azure'))
 
 def ConvertUTF8(path):
     # Opening JSON file
@@ -91,6 +90,8 @@ def speech_idenitfy(file_name):
     command  = f'/root/.dotnet/tools/spx batch transcription create --language "zh-CN" --name "{file_name}" --content "https://ntuststorage2.blob.core.windows.net/ntustvoice/{file_name}"'
     
     result = subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    with open('example.txt', 'a') as file:
+        file.write(f'{command}\n')
     # 检查是否有错误输出
     if result.returncode == 0:
         # 命令成功执行
@@ -103,11 +104,12 @@ def speech_idenitfy(file_name):
     else:
         # 命令执行失败，输出错误信息
         print("命令执行失败：")
-        print(result.stderr)
+        
 
 def emotion_identify(file_name):
     
-    
+    file_name = file_name
+    print(file_name)
     with open('token.json', 'r') as file:
         data = json.load(file)
         
@@ -131,66 +133,38 @@ def emotion_identify(file_name):
     urls = [f"https://{blob_name}.blob.core.windows.net/{container_name}/{file_name}?{sas_token}"]
 
     client = HumeBatchClient(data['humeKey'])
-    
-    os.mkdir(f'{EMOTION_RESULT_FOLDER}{file_name}')
+    if not os.path.exists(f'{EMOTION_RESULT_FOLDER}{file_name}'):
+        os.mkdir(f'{EMOTION_RESULT_FOLDER}{file_name}')
 
-    job = client.submit_job(urls, [BurstConfig()])
-    details = job.await_complete()
-    job.download_predictions(f'{EMOTION_RESULT_FOLDER}{file_name}/burst.json')
-    ConvertUTF8(f'{EMOTION_RESULT_FOLDER}{file_name}/burst.json')
+    if not os.path.exists(f'{EMOTION_RESULT_FOLDER}{file_name}/burst.json'):
+        job = client.submit_job(urls, [BurstConfig()])
+        job.await_complete()
+        job.download_predictions(f'{EMOTION_RESULT_FOLDER}{file_name}/burst.json')
+        ConvertUTF8(f'{EMOTION_RESULT_FOLDER}{file_name}/burst.json')
 
+    if not os.path.exists(f'{EMOTION_RESULT_FOLDER}{file_name}/prosody.json'):
+        job = client.submit_job(urls, [ProsodyConfig()])
+        job.await_complete()
+        job.download_predictions(f'{EMOTION_RESULT_FOLDER}{file_name}/prosody.json')
+        ConvertUTF8(f'{EMOTION_RESULT_FOLDER}{file_name}/prosody.json')
 
-    job = client.submit_job(urls, [ProsodyConfig()])
-    job.await_complete()
-    job.download_predictions(f'{EMOTION_RESULT_FOLDER}{file_name}/prosody.json')
-    ConvertUTF8(f'{EMOTION_RESULT_FOLDER}{file_name}/prosody.json')
-
-
-    job = client.submit_job(urls, [BurstConfig()])
-    job.await_complete()
-    job.download_predictions(f'{EMOTION_RESULT_FOLDER}{file_name}/language.json')
-    ConvertUTF8(f'{EMOTION_RESULT_FOLDER}{file_name}/language.json')
+    if not os.path.exists(f'{EMOTION_RESULT_FOLDER}{file_name}/language.json'):
+        job = client.submit_job(urls, [BurstConfig()])
+        job.await_complete()
+        job.download_predictions(f'{EMOTION_RESULT_FOLDER}{file_name}/language.json')
+        ConvertUTF8(f'{EMOTION_RESULT_FOLDER}{file_name}/language.json')
 
     
 @identifly_blueprint.route('/speech_idenitfy_download', methods=['get'])
 def speech_idenitfy_download():
     
     file_name = request.args.get('name')
-    with open('output.txt', 'w') as file:
-        # 写入内容到文件
-        file.write(f'{file_name}\n')
         
     result_list=os.listdir(SPEECH_RESULT_FOLDER)
     submit_list=os.listdir(SUMIT_FOLDER)
     if(f'{file_name}.json' not in result_list):
         if(f'{file_name}.json' not in submit_list):
             return redirect(url_for('azure'))
-        
-        f = open(f'./submitFile/{file_name}.json')
-        data = json.load(f)
-        f.close()
-        id = data['links']['files'].split('/')[-2]
-        
-        command  = f'/root/.dotnet/tools/spx batch transcription list --api-version v3.1 --files --transcription {id}'
-        
-        result = subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        
-        # 检查是否有错误输出
-        if result.returncode == 0:
-            # sucuss
-            result_str = "\n".join(result.stdout.split('\n')[14:])
-            out = json.loads(result_str)
-            
-            try:
-                answer_path = out['values'][0]['links']['contentUrl']
-                answer = subprocess.run(f'wget -O "{SPEECH_RESULT_FOLDER}{file_name}.json" "{answer_path}"', shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            except:
-                # 還沒有翻譯完成
-                return redirect(url_for('azure'))
-        else:
-            # error
-            print(result.stderr)
-            
     
     return send_file(f'{SPEECH_RESULT_FOLDER}{file_name}.json',as_attachment=True)
 

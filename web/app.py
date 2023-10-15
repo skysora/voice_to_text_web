@@ -1,11 +1,8 @@
 import os
-from dotenv import load_dotenv
 from view.views import view_blueprint
 from identifly.views import identifly_blueprint
 from config.config import config
 from flask import Flask, abort, render_template, request, jsonify, session, Blueprint
-
-
 
 app = Flask(__name__)
 # app = create_app('testing')
@@ -17,4 +14,4 @@ app.register_blueprint(identifly_blueprint)
     
 if __name__ == "__main__":
     
-    app.run(debug=True,port=5050)
+    app.run()

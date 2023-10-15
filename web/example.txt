@@ -1,0 +1,7 @@
+/root/.dotnet/tools/spx batch transcription create --language "zh-CN" --name "_臺灣民主國的抗日.mp3" --content "https://ntuststorage2.blob.core.windows.net/ntustvoice/_臺灣民主國的抗日.mp3"
+/root/.dotnet/tools/spx batch transcription create --language "zh-CN" --name "108新課綱｜高三化學｜【觀念】零級反應.mp3" --content "https://ntuststorage2.blob.core.windows.net/ntustvoice/108新課綱｜高三化學｜【觀念】零級反應.mp3"
+/root/.dotnet/tools/spx batch transcription create --language "zh-CN" --name "108新課綱｜高三物理｜繩波的反射與透射.mp3" --content "https://ntuststorage2.blob.core.windows.net/ntustvoice/108新課綱｜高三物理｜繩波的反射與透射.mp3"
+/root/.dotnet/tools/spx batch transcription create --language "zh-CN" --name "國中公民  政府組織.mp3" --content "https://ntuststorage2.blob.core.windows.net/ntustvoice/國中公民  政府組織.mp3"
+/root/.dotnet/tools/spx batch transcription create --language "zh-CN" --name "IC0001W0086.wav" --content "https://ntuststorage2.blob.core.windows.net/ntustvoice/IC0001W0086.wav"
+/root/.dotnet/tools/spx batch transcription create --language "zh-CN" --name "國小國語  感情發抒的修辭：設問、感嘆和呼告2.mp3" --content "https://ntuststorage2.blob.core.windows.net/ntustvoice/國小國語  感情發抒的修辭：設問、感嘆和呼告2.mp3"
+/root/.dotnet/tools/spx batch transcription create --language "zh-CN" --name "高中地科   地面的可見光望遠鏡二：不斷加大的口徑.mp3" --content "https://ntuststorage2.blob.core.windows.net/ntustvoice/高中地科   地面的可見光望遠鏡二：不斷加大的口徑.mp3"
