@@ -1,6 +1,7 @@
 import os
 
 
+
 UPLOAD_FOLDER = './data/signal/'
 SPEECH_RESULT_FOLDER = './data/speechResult/'
 SUMIT_FOLDER = './data/submitFile/'

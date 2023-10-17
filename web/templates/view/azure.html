@@ -72,26 +72,26 @@
           </a>
         </li> -->
         
-        <!-- <li class="nav-item mt-3">
+        <li class="nav-item mt-3">
           <h6 class="ps-4 ms-2 text-uppercase text-xs text-white font-weight-bolder opacity-8">帳號頁面</h6>
         </li>
-        <li class="nav-item">
+        <!-- <li class="nav-item">
           <a class="nav-link text-white " href="../pages/profile.html">
             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
               <i class="material-icons opacity-10">person</i>
             </div>
             <span class="nav-link-text ms-1">人物簡介</span>
           </a>
-        </li>
+        </li> -->
         <li class="nav-item">
-          <a class="nav-link text-white " href="../pages/sign-in.html">
+          <a class="nav-link text-white " href="{{ url_for('auth.logout') }}">
             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
               <i class="material-icons opacity-10">login</i>
             </div>
-            <span class="nav-link-text ms-1">登入</span>
+            <span class="nav-link-text ms-1">登出</span>
           </a>
         </li>
-        <li class="nav-item">
+        <!-- <li class="nav-item">
           <a class="nav-link text-white " href="../pages/sign-up.html">
             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
               <i class="material-icons opacity-10">assignment</i>
@@ -119,25 +119,10 @@
             
           </div>
           <ul class="navbar-nav  justify-content-end">
-            
-            <li class="nav-item d-xl-none ps-3 d-flex align-items-center">
-              <a href="javascript:;" class="nav-link text-body p-0" id="iconNavbarSidenav">
-                <div class="sidenav-toggler-inner">
-                  <i class="sidenav-toggler-line"></i>
-                  <i class="sidenav-toggler-line"></i>
-                  <i class="sidenav-toggler-line"></i>
-                </div>
-              </a>
-            </li>
-            <li class="nav-item px-3 d-flex align-items-center">
-              <a href="javascript:;" class="nav-link text-body p-0">
-                <i class="fa fa-cog fixed-plugin-button-nav cursor-pointer"></i>
-              </a>
-            </li>
             <li class="nav-item d-flex align-items-center">
-              <a href="../pages/sign-in.html" class="nav-link text-body font-weight-bold px-0">
+              <a class="nav-link text-body font-weight-bold px-0">
                 <i class="fa fa-user me-sm-1"></i>
-                <span class="d-sm-inline d-none">登入</span>
+                <span class="d-sm-inline d-none">{{ current_user.username }}</span>
               </a>
             </li>
           </ul>
@@ -204,8 +189,7 @@
                             </div>
                           </td>
                           <td>
-                            <p class="text-xs font-weight-bold mb-0">Manager</p>
-                            <p class="text-xs text-secondary mb-0">Organization</p>
+                            <p class="text-xs font-weight-bold mb-0">{{data[file]['User']}}</p>
                           </td>
                           <td class="align-middle text-center text-sm">
                             {% if data[file]['status'] == "Finish" %}

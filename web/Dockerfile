@@ -25,5 +25,4 @@ RUN pip3 install ./packages/flask-login
 RUN apt install vim -y
 
 
-WORKDIR /web
-CMD gunicorn app:app -c gunicorn.conf.py
+CMD gunicorn app:app -c ./web/gunicorn.conf.py --pythonpath ./web

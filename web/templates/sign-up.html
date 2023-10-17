@@ -60,7 +60,7 @@
                     {{ form.hidden_tag() }}
                     <div class="input-group input-group-outline mb-3">
                         {{ form.username.label(class="form-label") }}
-                      {{ form.username(class="form-control") }}
+                        {{ form.username(class="form-control") }}
                     </div>
                     <div class="input-group mb-3">
                       {% if form.username.errors %}
@@ -70,7 +70,7 @@
                               {% endfor %}
                           </ul>
                       {% endif %}
-                  </div>
+                    </div>
                     <div class="input-group input-group-outline mb-3">
                       {{ form.email.label(class="form-label") }}
                       {{ form.email(class="form-control") }}

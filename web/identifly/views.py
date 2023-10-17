@@ -9,6 +9,9 @@ from datetime import datetime, timedelta
 from hume.models.config import BurstConfig,LanguageConfig,ProsodyConfig
 import shutil
 import threading
+from web.database import db 
+from web.models.models import File
+from flask_login import current_user, login_required
 
 
 identifly_blueprint = Blueprint('identifly', __name__, template_folder='templates')
@@ -20,6 +23,7 @@ EMOTION_RESULT_FOLDER = './data/emotionResult/'
 
 
 @identifly_blueprint.route('/upload_file', methods=['POST'])
+@login_required
 def upload_file():
     # Iterate for each file in the files List, and Save them
     files = request.files.getlist('files[]')
@@ -27,7 +31,14 @@ def upload_file():
         # 本地端測試
         filename = file.filename
         file.save(os.path.join(UPLOAD_FOLDER, filename))
-    
+        # Create a new File object and associate it with the current user
+        new_file = File(
+            title=filename,
+            file_path=os.path.join(UPLOAD_FOLDER, filename),
+            user_id=current_user.id  # Assuming your user model has an 'id' field
+        )
+        db.session.add(new_file)
+    db.session.commit()
     return redirect(url_for('view.azure'))
       
 @identifly_blueprint.route('/download_file', methods=['get'])
