@@ -14,7 +14,7 @@ ENV PATH="${PATH}:/root/.dotnet/tools"
 
 RUN apt-get install python3.8-distutils -y
 RUN apt-get install python3.8 -y
-
+RUN apt-get install ffmpeg -y 
 RUN apt-get install wget -y
 RUN wget https://bootstrap.pypa.io/get-pip.py
 RUN python3.8 get-pip.py

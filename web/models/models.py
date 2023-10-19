@@ -25,7 +25,7 @@ class User(db.Model, UserMixin):
 class File(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(20), unique=True, nullable=False)
+    title = db.Column(db.String(20), nullable=False)
     file_path = db.Column(db.String(20), unique=True, nullable=False)
     submit_text_file_path = db.Column(db.String(30), unique=True,default=None)
     origin_text_file_path = db.Column(db.String(30), unique=True,default=None)

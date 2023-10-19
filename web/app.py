@@ -8,7 +8,7 @@ from web.login_manager import login_manager
 from auth import bctrypt
 from auth.views import auth_blueprint
 from view.views import view_blueprint
-from identifly.views import identifly_blueprint
+from identify.views import identifly_blueprint
 
 
 app = Flask(__name__)

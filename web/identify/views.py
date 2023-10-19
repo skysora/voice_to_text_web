@@ -1,5 +1,5 @@
 # identifly.py
-from flask import Blueprint,Flask, request, redirect, url_for,render_template,send_file, jsonify
+from flask import Blueprint,Flask, request, redirect, url_for,render_template,send_file, send_from_directory
 import os
 import json
 from azure.storage.blob import BlobServiceClient,BlobServiceClient,generate_container_sas,BlobSasPermissions
@@ -12,14 +12,15 @@ import threading
 from web.database import db 
 from web.models.models import File
 from flask_login import current_user, login_required
+from opencc import OpenCC
 
-
-identifly_blueprint = Blueprint('identifly', __name__, template_folder='templates')
-UPLOAD_FOLDER = './data/signal/'
-SPEECH_RESULT_FOLDER = './data/speechResult/'
-SUMIT_FOLDER = './data/submitFile/'
-EMOTION_RESULT_FOLDER = './data/emotionResult/'
-
+identifly_blueprint = Blueprint('identify', __name__, template_folder='templates')
+UPLOAD_FOLDER = '/web/data/signal/'
+SPEECH_RESULT_FOLDER = '/web/data/speechResult/'
+SUMIT_FOLDER = '/web/data/submitFile/'
+EMOTION_RESULT_FOLDER = '/web/data/emotionResult/'
+PROCESS_SPEECH_RESULT_FOLDER = '/web/data/process_speechResult/'
+TOKEN_PATH="/web/token.json"
 
 
 @identifly_blueprint.route('/upload_file', methods=['POST'])
@@ -50,7 +51,38 @@ def download_file():
 @identifly_blueprint.route('/delete_file', methods=['get'])
 def delete_file():
     file_name = request.args.get('name')
-    os.remove(f'{UPLOAD_FOLDER}{file_name}')
+    file = File.query.filter_by(title=file_name).first()
+    
+    
+    #singal
+    if os.path.exists(file.file_path):
+        os.remove(file.file_path)
+        
+
+    # #speech
+    # try:
+    #     if os.path.exists(file.submit_text_file_path):
+    #         os.remove(file.submit_text_file_path)
+    #     if os.path.exists(file.origin_text_file_path):
+    #         os.remove(file.origin_text_file_path)
+    # except:
+    #     pass
+    
+    # #emotion
+    # try:
+    #     if os.path.exists(file.origin_emotion_file_path):
+    #         shutil.rmtree(file.origin_emotion_file_path)
+    #     #emotion zip
+    #     if os.path.exists(file.origin_emotion_file_path+'.zip'):
+    #         os.remove(file.origin_emotion_file_path+'.zip')
+    # except:
+    #     pass
+        
+        
+          
+    file_to_delete = File.query.filter_by(title=file_name).first()
+    db.session.delete(file_to_delete)
+    db.session.commit()
     return redirect(url_for('view.azure'))
 
 
@@ -58,7 +90,7 @@ def delete_file():
 def insert_file_idenitfy():
     file_name = request.args.get('name')
     
-    with open('token.json', 'r') as file:
+    with open(f'{TOKEN_PATH}', 'r') as file:
         data = json.load(file)
         
     command  = f'/root/.dotnet/tools/spx config @key --set {data["voiceKey"]}'
@@ -101,8 +133,9 @@ def speech_idenitfy(file_name):
     command  = f'/root/.dotnet/tools/spx batch transcription create --language "zh-CN" --name "{file_name}" --content "https://ntuststorage2.blob.core.windows.net/ntustvoice/{file_name}"'
     
     result = subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    with open('example.txt', 'a') as file:
-        file.write(f'{command}\n')
+    
+
+    
     # 检查是否有错误输出
     if result.returncode == 0:
         # 命令成功执行
@@ -112,6 +145,10 @@ def speech_idenitfy(file_name):
         out = json.loads(result_str)
         with open(f'{SUMIT_FOLDER}{out["displayName"]}.json', "w") as json_file:
             json.dump(out, json_file)
+        
+        file = File.query.filter_by(title=file_name).first()
+        file.submit_text_file_path = f'{SUMIT_FOLDER}{out["displayName"]}.json'
+        db.session.commit()
     else:
         # 命令执行失败，输出错误信息
         print("命令执行失败：")
@@ -119,9 +156,8 @@ def speech_idenitfy(file_name):
 
 def emotion_identify(file_name):
     
-    file_name = file_name
-    print(file_name)
-    with open('token.json', 'r') as file:
+    
+    with open(f'{TOKEN_PATH}', 'r') as file:
         data = json.load(file)
         
     # 导入存储连接字符串和容器名称
@@ -140,7 +176,7 @@ def emotion_identify(file_name):
             permission=permissions,
             expiry=  datetime.now()+ timedelta(days=1)
     )
-    # 构建 SAS URL
+    # 構建 SAS URL
     urls = [f"https://{blob_name}.blob.core.windows.net/{container_name}/{file_name}?{sas_token}"]
 
     client = HumeBatchClient(data['humeKey'])
@@ -171,13 +207,13 @@ def speech_idenitfy_download():
     
     file_name = request.args.get('name')
         
-    result_list=os.listdir(SPEECH_RESULT_FOLDER)
-    submit_list=os.listdir(SUMIT_FOLDER)
-    if(f'{file_name}.json' not in result_list):
-        if(f'{file_name}.json' not in submit_list):
-            return redirect(url_for('azure'))
+    file = File.query.filter_by(title=file_name).first()
     
-    return send_file(f'{SPEECH_RESULT_FOLDER}{file_name}.json',as_attachment=True)
+    if (not os.path.exists(f"{file.origin_text_file_path}")):
+        return redirect(url_for('azure'))
+    
+
+    return send_file(f'{file.origin_text_file_path}',as_attachment=True)
 
 
 @identifly_blueprint.route('/emotion_idenitfy_download', methods=['get'])
@@ -193,4 +229,57 @@ def emotion_idenitfy_download():
         
     return send_file(f'{EMOTION_RESULT_FOLDER}{file_name}.zip',as_attachment=True)
     
+
+@identifly_blueprint.route('/edit', methods=['get'])
+def edit():
+    file_name = request.args.get('name')
+    file = File.query.filter_by(title=file_name).first()
+    
+    converter = OpenCC('s2twp')
+    audio_path = f'{file.modified_text_file_path}/audio/'
+    text_path = f'{file.modified_text_file_path}/text/'
+    
+    file_list=[]
+    data={}
+    for i in range(len(os.listdir(audio_path))):
+        file_list.append(f'{i}')
+        with open(f'{text_path}{i}.txt') as file_text:
+            try:
+                text_data = file_text.readlines()[0]
+            except:
+                text_data = ""
+        
+        audio = f"{audio_path}{i}.mp3".replace(f'{PROCESS_SPEECH_RESULT_FOLDER}','')
+        with open('./web/test.txt','w') as text:
+            text.write(f'{audio}')
+        data[f'{i}'] = {"text":converter.convert(text_data),"audio":f"{audio}"}
+        
+
+    return render_template('view/info.html',data=data,file_list=file_list,message="success",file_name=file_name)
+    
+@identifly_blueprint.route('/edit_file', methods=['POST'])
+def edit_file():
+    data = request.json  # 解析JSON数据
+    file_name = data.get('file_name')
+    editedText = data.get('editedText')
+    pharses = data.get('pharses')
+    
+    file = File.query.filter_by(title=file_name).first()
+
+    text_path = f'{file.modified_text_file_path}/text/{pharses}.txt'
+    
+    with open(text_path, 'w', encoding='utf-8') as file:
+        file.write(editedText)
+    
+          
+    return redirect(url_for('identify.edit', name=file_name))
+
+
+@identifly_blueprint.route('/data/<path:filename>')
+def data_directory(filename):
+    
+    with open('./web/test.txt','w') as test:
+        test.write(filename)
+        
+    return send_from_directory(f'{PROCESS_SPEECH_RESULT_FOLDER}',filename)
     

@@ -1,0 +1,169 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="apple-touch-icon" sizes="76x76" href="{{ url_for('static', filename='/assets/img/apple-icon.png') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='/assets/img/favicon.png') }}">
+  <title>
+    Material Dashboard 2 by Creative Tim
+  </title>
+  <!--     Fonts and icons     -->
+  <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,900|Roboto+Slab:400,700" />
+  <!-- Nucleo Icons -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='/assets/css/nucleo-icons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='/assets/css/nucleo-svg.css') }}">
+  <!-- Font Awesome Icons -->
+  <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <!-- CSS Files -->
+  <link id="pagestyle" href="{{ url_for('static', filename='/assets/css/material-dashboard.css') }}" rel="stylesheet" />
+  <!-- Nepcha Analytics (nepcha.com) -->
+  <!-- Nepcha is a easy-to-use web analytics. No cookies and fully compliant with GDPR, CCPA and PECR. -->
+  <script defer data-site="YOUR_DOMAIN_HERE" src="https://api.nepcha.com/js/nepcha-analytics.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</head>
+<style>
+  .submit-button {
+      background-color: #007bff; /* 背景颜色 */
+      color: #fff; /* 文本颜色 */
+      border: none; /* 去掉边框 */
+      padding: 10px 20px; /* 内边距 */
+      cursor: pointer; /* 鼠标样式 */
+      border-radius: 5px; /* 圆角 */
+  }
+  .submit-button:hover {
+      background-color: #0056b3; /* 鼠标悬停时的背景颜色 */
+  }
+</style>
+<body class="g-sidenav-show  bg-gray-200">
+    {% include './component/sidebar.html' %}
+    <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg ">
+    <!-- Navbar -->
+    <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur" data-scroll="true">
+      <div class="container-fluid py-1 px-3">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+          <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{{ url_for('auth.init') }}">主要頁面</a></li>
+            <li class="breadcrumb-item text-sm text-dark active" aria-current="page">資料表</li>
+          </ol>
+          <h6 class="font-weight-bolder mb-0">資料表</h6>
+        </nav>
+        <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
+          <div class="ms-md-auto pe-md-3 d-flex align-items-center">
+            
+          </div>
+          <ul class="navbar-nav  justify-content-end">
+            <li class="nav-item d-flex align-items-center">
+              <a class="nav-link text-body font-weight-bold px-0">
+                <i class="fa fa-user me-sm-1"></i>
+                <span class="d-sm-inline d-none">{{ current_user.username }}</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <!-- End Navbar -->
+    <div class="container-fluid py-4">
+      <!-- table -->
+      <div class="row mb-4">
+        <div class="col-lg-12 col-md-12 mb-md-12 mb-12">
+          <div class="card">
+            <!-- action -->
+            <div class="card-header pb-0">
+              <div class="row">
+                <div class="col-lg-6 col-6">
+                  <h6>{{ file_name }}</h6>
+                </div> 
+                <div id="datatable" class="card-body px-0 pb-2">
+                  <div class="table-responsive p-0">
+                    <table class="table align-items-center mb-0">
+                      <thead>
+                        <tr>
+                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">段落</th>
+                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">內容</th>
+                          <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">音訊</th>
+                          <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">動作</th>
+                        </tr>
+                      </thead>
+                      <div id="table_data">
+                        <tbody>
+                          {% for pharses in file_list %}
+                          <tr>
+                            <td style="vertical-align: middle;">段落: {{ pharses }}</td>
+                            <td contenteditable="true" oninput="convertNewlines(this)" style="max-width: 300px; white-space: pre-wrap; word-wrap: break-word; overflow: hidden;text-align: left;" id={{ pharses }}>{{ data[pharses]['text'] }}</td>
+                            </td>
+                            <td class="text-center">
+                              <audio controls>
+                                <source src="{{ url_for('identify.data_directory', filename=data[pharses]['audio']) }}" type="audio/mpeg">
+                              </audio>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle;">
+                                <button class="submit-button" onclick="submitEditedText('{{ pharses }}')">更改</button>
+                            </td>
+                          </tr>
+                          {% endfor %}
+                        </tbody>
+                      </div>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- context -->
+          </div>
+
+        </div>
+      </div>
+      {% include './component/footer.html' %}
+    </div>
+  </main>
+  <!--   Core JS Files   -->
+  <script src="{{ url_for('static', filename='/assets/js/core/popper.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/assets/js/core/bootstrap.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/assets/js/plugins/perfect-scrollbar.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/assets/js/plugins/smooth-scrollbar.min.js') }}"></script>
+  <script>
+    var win = navigator.platform.indexOf('Win') > -1;
+    if (win && document.querySelector('#sidenav-scrollbar')) {
+      var options = {
+        damping: '0.5'
+      }
+      Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
+    }
+  </script>
+  <!-- Github buttons -->
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
+  <script src="{{ url_for('static', filename='/assets/js/material-dashboard.min.js') }}"></script>
+  
+  <script>
+    function submitEditedText(pharses) {
+      var editedText = document.getElementById(pharses).textContent;
+      var dataToSend = {
+        file_name: '{{ file_name }}' , // 假设您希望将文件名传递给后端
+        pharses:pharses,
+        editedText: editedText
+      };
+      console.log(dataToSend)
+      $.ajax({
+        url: '{{ url_for('identify.edit_file') }}',
+        method: 'POST',
+        data: JSON.stringify(dataToSend), // 将数据转换为JSON字符串
+        contentType: 'application/json', // 设置Content-Type为JSON
+        success: function(response) {
+            location.reload();
+        },
+        error: function(response) {
+            console.log(response.message);
+        }
+      });
+    }
+  </script>
+</body>
+
+</html>
