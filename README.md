@@ -3,7 +3,7 @@
 
 ## 登入、註冊
 
-- 參考：https://skysora.github.io/post/7/
+- [教學](https://skysora.github.io/post/7/)
 
 
 ## Azure服務串接
