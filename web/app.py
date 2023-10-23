@@ -1,15 +1,13 @@
 import os
 from flask import Flask
-
-
-from config import TestingConfig
+from web.config import TestingConfig
 from web.database import db
 from web.login_manager import login_manager
-from auth import bctrypt
-from auth.views import auth_blueprint
-from view.views import view_blueprint
-from identify.views import identifly_blueprint
-
+from web.auth import bctrypt
+from web.auth.views import auth_blueprint
+from web.view.views import view_blueprint
+from web.identify.views import identifly_blueprint
+from web.models.models import User,UserRoleEnum
 
 app = Flask(__name__)
 app.config.from_object(TestingConfig) 
@@ -26,7 +24,12 @@ def setup_database(app):
       db.create_all()
 
 # with app.app_context():
-#   db.create_all()  
+#   user = User.query.filter_by(username="sora").first()
+#   user.permissions = UserRoleEnum.ADMIN
+#   db.session.commit()
+#   with open('./web/test.txt','w') as test:
+#     test.write(str(user.permissions))
+  # db.create_all()  
   
        
 if __name__ == "__main__":

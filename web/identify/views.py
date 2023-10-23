@@ -4,9 +4,6 @@ import os
 import json
 from azure.storage.blob import BlobServiceClient,BlobServiceClient,generate_container_sas,BlobSasPermissions
 import subprocess
-from hume import HumeBatchClient
-from datetime import datetime, timedelta
-from hume.models.config import BurstConfig,LanguageConfig,ProsodyConfig
 import shutil
 import threading
 from web.database import db 
@@ -20,8 +17,8 @@ SPEECH_RESULT_FOLDER = '/web/data/speechResult/'
 SUMIT_FOLDER = '/web/data/submitFile/'
 EMOTION_RESULT_FOLDER = '/web/data/emotionResult/'
 PROCESS_SPEECH_RESULT_FOLDER = '/web/data/process_speechResult/'
+TEXT_OUTPUT = '/web/data/output/'
 TOKEN_PATH="/web/token.json"
-
 
 @identifly_blueprint.route('/upload_file', methods=['POST'])
 @login_required
@@ -115,19 +112,8 @@ def insert_file_idenitfy():
     if(f'{file_name}.json' not in submit_list):
         speech_idenitfy(file_name)
         
-    task_thread = threading.Thread(target=emotion_identify,args=((file_name,)))
-    task_thread.start()
-    
     return redirect(url_for('view.azure'))
 
-def ConvertUTF8(path):
-    # Opening JSON file
-    with open(path, 'r') as openfile:
-        # Reading from json file
-        json_object = json.load(openfile)
-        
-    with open(path, "w") as outfile:
-        json.dump(json_object, outfile,ensure_ascii=False) 
         
 def speech_idenitfy(file_name):
     command  = f'/root/.dotnet/tools/spx batch transcription create --language "zh-CN" --name "{file_name}" --content "https://ntuststorage2.blob.core.windows.net/ntustvoice/{file_name}"'
@@ -154,54 +140,6 @@ def speech_idenitfy(file_name):
         print("命令执行失败：")
         
 
-def emotion_identify(file_name):
-    
-    
-    with open(f'{TOKEN_PATH}', 'r') as file:
-        data = json.load(file)
-        
-    # 导入存储连接字符串和容器名称
-    blob_storage_key = data['blob_storage_key']
-    container_name = "ntustvoice"
-    blob_name = "ntuststorage2"  # 文件名称
-
-    # 设置 SAS 的权限
-    permissions = BlobSasPermissions(read=True)  # 可以根据需要调整权限
-
-    # # 生成 Blob 的 SAS
-    sas_token = generate_container_sas(
-            account_name=blob_name,
-            container_name=container_name,
-            account_key=blob_storage_key,
-            permission=permissions,
-            expiry=  datetime.now()+ timedelta(days=1)
-    )
-    # 構建 SAS URL
-    urls = [f"https://{blob_name}.blob.core.windows.net/{container_name}/{file_name}?{sas_token}"]
-
-    client = HumeBatchClient(data['humeKey'])
-    if not os.path.exists(f'{EMOTION_RESULT_FOLDER}{file_name}'):
-        os.mkdir(f'{EMOTION_RESULT_FOLDER}{file_name}')
-
-    if not os.path.exists(f'{EMOTION_RESULT_FOLDER}{file_name}/burst.json'):
-        job = client.submit_job(urls, [BurstConfig()])
-        job.await_complete()
-        job.download_predictions(f'{EMOTION_RESULT_FOLDER}{file_name}/burst.json')
-        ConvertUTF8(f'{EMOTION_RESULT_FOLDER}{file_name}/burst.json')
-
-    if not os.path.exists(f'{EMOTION_RESULT_FOLDER}{file_name}/prosody.json'):
-        job = client.submit_job(urls, [ProsodyConfig()])
-        job.await_complete()
-        job.download_predictions(f'{EMOTION_RESULT_FOLDER}{file_name}/prosody.json')
-        ConvertUTF8(f'{EMOTION_RESULT_FOLDER}{file_name}/prosody.json')
-
-    if not os.path.exists(f'{EMOTION_RESULT_FOLDER}{file_name}/language.json'):
-        job = client.submit_job(urls, [BurstConfig()])
-        job.await_complete()
-        job.download_predictions(f'{EMOTION_RESULT_FOLDER}{file_name}/language.json')
-        ConvertUTF8(f'{EMOTION_RESULT_FOLDER}{file_name}/language.json')
-
-    
 @identifly_blueprint.route('/speech_idenitfy_download', methods=['get'])
 def speech_idenitfy_download():
     
@@ -209,11 +147,30 @@ def speech_idenitfy_download():
         
     file = File.query.filter_by(title=file_name).first()
     
-    if (not os.path.exists(f"{file.origin_text_file_path}")):
+    
+    text_path = f"{file.modified_text_file_path}/text"
+    
+    if (not os.path.exists(f"{text_path}")):
         return redirect(url_for('azure'))
     
+    output_file_path = f"{TEXT_OUTPUT}{file_name}.txt"
+    # 打开输出文件以进行写入
+    with open(output_file_path, "w", encoding="utf-8") as output_file:
+        # 遍历指定目录下的所有文件
+        for filename in range(len(os.listdir(f"{text_path}"))):
+            
+            file_path = os.path.join(f"{text_path}", f'{filename}.txt')
 
-    return send_file(f'{file.origin_text_file_path}',as_attachment=True)
+            # 打开并读取当前文本文件的内容
+            with open(file_path, "r", encoding="utf-8") as input_file:
+                file_contents = input_file.read()
+
+                # 将当前文本文件的内容写入输出文件
+                output_file.write(file_contents)
+                output_file.write("\n")  # 在每个文件的内容之间添加换行符
+    
+
+    return send_file(f'{output_file_path}',as_attachment=True)
 
 
 @identifly_blueprint.route('/emotion_idenitfy_download', methods=['get'])
@@ -232,13 +189,38 @@ def emotion_idenitfy_download():
 
 @identifly_blueprint.route('/edit', methods=['get'])
 def edit():
+    
     file_name = request.args.get('name')
     file = File.query.filter_by(title=file_name).first()
     
+    user_files = File.query.filter_by(user_id=current_user.id).order_by(File.timestamp.desc()).all()
+    file_list=[file.title for file in user_files]
+    now_index = file_list.index(file_name)
+    
+    # 前一頁
+    if(now_index-1<0):
+        previous_file_title = file_list[len(file_list)-1]
+    else:
+        previous_file_title = file_list[now_index-1]
+        
+    # 後一頁
+    with open('./web/test.txt','w') as test:
+        test.write(f"{file_list}")
+        
+    if(now_index+1==len(file_list) or now_index==0):
+        next_file_title = file_list[0]
+    else:
+        next_file_title = file_list[now_index+1]
+    
+    audio_path = file.file_path.replace('/web/data','')
+    file_info = {"file_name":file_name,'previous_file':previous_file_title,'next_file':next_file_title,'audio':audio_path}
+    
+
     converter = OpenCC('s2twp')
     audio_path = f'{file.modified_text_file_path}/audio/'
     text_path = f'{file.modified_text_file_path}/text/'
-    
+        
+        
     file_list=[]
     data={}
     for i in range(len(os.listdir(audio_path))):
@@ -249,14 +231,15 @@ def edit():
             except:
                 text_data = ""
         
-        audio = f"{audio_path}{i}.mp3".replace(f'{PROCESS_SPEECH_RESULT_FOLDER}','')
-        with open('./web/test.txt','w') as text:
-            text.write(f'{audio}')
+        
+        audio = f"{audio_path}{i}.mp3".replace(f'{PROCESS_SPEECH_RESULT_FOLDER}','process_speechResult/')
         data[f'{i}'] = {"text":converter.convert(text_data),"audio":f"{audio}"}
         
 
-    return render_template('view/info.html',data=data,file_list=file_list,message="success",file_name=file_name)
-    
+    return render_template('view/info.html',data=data,file_list=file_list,message="success",file_info=file_info)
+   
+
+       
 @identifly_blueprint.route('/edit_file', methods=['POST'])
 def edit_file():
     data = request.json  # 解析JSON数据
@@ -278,8 +261,6 @@ def edit_file():
 @identifly_blueprint.route('/data/<path:filename>')
 def data_directory(filename):
     
-    with open('./web/test.txt','w') as test:
-        test.write(filename)
-        
-    return send_from_directory(f'{PROCESS_SPEECH_RESULT_FOLDER}',filename)
+    
+    return send_from_directory(f'/web/data/',filename)
     
