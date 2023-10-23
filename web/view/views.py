@@ -59,11 +59,15 @@ def azure():
     for file in user_files[start:end]:
         
         file_name = f'{file.title}'
-        data[file_name] = {'result':{'speech':False,'emotion':False,'edit':False,'text':False},'datetime':'','User':f'{User.query.filter_by(id=file.user_id).first().username}'}
+        data[file_name] = {'result':{'speech':False,"submit":False,'emotion':False,'edit':False,'text':False},'datetime':'','User':f'{User.query.filter_by(id=file.user_id).first().username}'}
         data[file_name]['datetime'] = f'{file.timestamp}'
         # 檢查這個檔案的答案是不是已經在資料夾內
         check_exitst_answer(file)
         
+
+        if (os.path.exists(f'{file.submit_text_file_path}')):
+            data[file_name]['result']["submit"] = True
+
         #speech 
         if (not os.path.exists(f'{file.origin_text_file_path}')) and (os.path.exists(f'{file.submit_text_file_path}')):
             check_speech(file_name)
@@ -81,7 +85,7 @@ def azure():
         audio_path = f'{file.modified_text_file_path}/audio/'
         text_path = f'{file.modified_text_file_path}/text/'
         # 產生情緒辨識檔案
-        if (file.modified_text_file_path != None):
+        if (file.modified_text_file_path != None) and (len(os.listdir(audio_path)) == len(os.listdir(text_path))):
             if os.path.exists(file.modified_text_file_path) and (file.origin_emotion_file_path == None or not os.path.exists(file.origin_emotion_file_path) or len(os.listdir(file.origin_emotion_file_path))!=len(os.listdir(text_path))):
                 file.origin_emotion_file_path = f'{EMOTION_RESULT_FOLDER}{file.title}'
                 db.session.commit()
@@ -111,10 +115,11 @@ def azure():
         #判斷狀態
         if(data[file_name]['result']['emotion'] and data[file_name]['result']['speech'] and data[file_name]['result']['text']):
             data[file_name]['status'] = "Finish"
+        
         elif(not data[file_name]['result']['emotion'] and not data[file_name]['result']['speech'] and not data[file_name]['result']['text']):
             data[file_name]['status'] = "NotYet"
             
-        elif(not data[file_name]['result']['speech']):
+        elif(not data[file_name]['result']["submit"]):
             data[file_name]['status'] = "Speech Waiting"
         elif(not data[file_name]['result']['text']):
             data[file_name]['status'] = "Text Waiting"

@@ -148,7 +148,7 @@
                           </td>
                           <!-- action -->
                           <td class="align-middle text-center text-sm">
-                            {% if data[file]['status'] == "NotYet" or not data[file]['status'] == "Finish" %}
+                            {% if not data[file]['result']['submit'] %}
                             <a href="{{ url_for('identify.insert_file_idenitfy') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
                               IDENTIFY
                             </a>
