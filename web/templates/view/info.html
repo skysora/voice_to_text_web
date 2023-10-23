@@ -76,42 +76,62 @@
             <!-- action -->
             <div class="card-header pb-0">
               <div class="row">
-                <div class="col-lg-6 col-6">
-                  <h6>{{ file_name }}</h6>
-                </div> 
-                <div id="datatable" class="card-body px-0 pb-2">
-                  <div class="table-responsive p-0">
-                    <table class="table align-items-center mb-0">
-                      <thead>
-                        <tr>
-                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">段落</th>
-                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">內容</th>
-                          <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">音訊</th>
-                          <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">動作</th>
-                        </tr>
-                      </thead>
-                      <div id="table_data">
-                        <tbody>
-                          {% for pharses in file_list %}
-                          <tr>
-                            <td style="vertical-align: middle;">段落: {{ pharses }}</td>
-                            <td contenteditable="true" oninput="convertNewlines(this)" style="max-width: 300px; white-space: pre-wrap; word-wrap: break-word; overflow: hidden;text-align: left;" id={{ pharses }}>{{ data[pharses]['text'] }}</td>
-                            </td>
-                            <td class="text-center">
-                              <audio controls>
-                                <source src="{{ url_for('identify.data_directory', filename=data[pharses]['audio']) }}" type="audio/mpeg">
-                              </audio>
-                            </td>
-                            <td style="text-align: center; vertical-align: middle;">
-                                <button class="submit-button" onclick="submitEditedText('{{ pharses }}')">更改</button>
-                            </td>
-                          </tr>
-                          {% endfor %}
-                        </tbody>
-                      </div>
-                    </table>
-                  </div>
+                <div class="col-lg-6 col-12">
+                    <div class="d-flex align-items-center">
+                        <h6>{{ file_info.file_name }}</h6>
+                        <audio controls class="ms-3">
+                            <source src="{{ url_for('identify.data_directory', filename=file_info.audio) }}" type="audio/mpeg">
+                        </audio>
+                    </div>
                 </div>
+              </div>
+              <div id="datatable" class="card-body px-0 pb-2">
+                <div class="table-responsive p-0">
+                  <table class="table align-items-center mb-0">
+                    <thead>
+                      <tr>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">段落</th>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">內容</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">音訊</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">動作</th>
+                      </tr>
+                    </thead>
+                    <div id="table_data">
+                      <tbody>
+                        {% for pharses in file_list %}
+                        <tr>
+                          <td style="vertical-align: middle;">段落: {{ pharses }}</td>
+                          <td contenteditable="true" oninput="convertNewlines(this)" style="max-width: 300px; white-space: pre-wrap; word-wrap: break-word; overflow: hidden;text-align: left;" id={{ pharses }}>{{ data[pharses]['text'] }}</td>
+                          </td>
+                          <td class="text-center">
+                            <audio controls>
+                              <source src="{{ url_for('identify.data_directory', filename=data[pharses]['audio']) }}" type="audio/mpeg">
+                            </audio>
+                          </td>
+                          <td style="text-align: center; vertical-align: middle;">
+                              <button class="submit-button" onclick="submitEditedText('{{ pharses }}')">更改</button>
+                          </td>
+                        </tr>
+                        {% endfor %}
+                        <tr>
+                          <td></td>
+                          <td></td>
+                          <td class="text-align: center; vertical-align: middle;">
+                            <div class="d-flex justify-content-end align-items-center">
+                                <a href="{{ url_for('identify.edit', name=file_info.previous_file) }}" id="prevButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
+                                    <i class="material-icons text-lg">chevron_left</i>
+                                </a>
+                                <a href="{{ url_for('identify.edit', name=file_info.next_file) }}" id="nextButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
+                                    <i class="material-icons text-lg">chevron_right</i>
+                                </a>
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </div>
+                  </table>
+                </div>
+              </div>
               </div>
             </div>
             <!-- context -->
@@ -145,7 +165,7 @@
     function submitEditedText(pharses) {
       var editedText = document.getElementById(pharses).textContent;
       var dataToSend = {
-        file_name: '{{ file_name }}' , // 假设您希望将文件名传递给后端
+        file_name: '{{ file_info.file_name }}' , // 假设您希望将文件名传递给后端
         pharses:pharses,
         editedText: editedText
       };
@@ -164,6 +184,8 @@
       });
     }
   </script>
+
+
 </body>
 
 </html>

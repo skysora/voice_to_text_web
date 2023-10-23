@@ -63,27 +63,41 @@
           <div class="card">
             <!-- action -->
             <div class="card-header pb-0">
-              <div class="row">
+              <div class="row justify-content-between">
                 <div class="col-lg-6 col-6">
                   <h6>紀錄</h6>
                 </div> 
-                <!-- <div class="col-lg-3 col-3 my-auto text-end">
-                  <div class="input-group input-group-outline">
-                    <label class="form-label">搜尋...</label>
-                    <input type="text" class="form-control" onfocus="focused(this)" onfocusout="defocused(this)">
+                <div class="col-lg-6 col-6 text-end">
+                  {% if user_list != None %}
+                  <!-- 下拉式選單 -->
+                  <div class="dropdown">
+                    <button class="btn bg-gradient-dark dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                      選擇使用者
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="userDropdown">
+                      <!-- 使用者選項 - 使用模板引擎生成 -->
+                      {% for user in user_list %}
+                        <li>
+                          <a class="dropdown-item user-option" onclick="changeUserList('{{ user.id }}')">{{ user.username }}</a>
+                        </li>
+                      {% endfor %}
+                      <!-- 添加更多使用者選項 -->
+                    </ul>
                   </div>
-                </div> -->
-                <div class="col-lg-6 col-6 my-auto text-end">
+                  {% endif %}
+                  <!-- End 下拉式選單 -->
+                  {% if select_user_flag %}
                   <label class="btn bg-gradient-dark mb-0">
                     <i class="material-icons text-sm">weekend</i>&nbsp;&nbsp;上傳檔案
                     <input type="file" style="display: none;" id="file-uploader" data-target="file-uploader" accept=".wav,.mp3" multiple="multiple"/>
                   </label>
-                  <!-- <a class="btn bg-gradient-primary mb-0" href="javascript:;"><i class="material-icons text-sm">add</i>&nbsp;&nbsp;開始錄音</a> -->
+                  {% endif %}
                 </div>
               </div>
             </div>
             <!-- table -->
             <h5 id="currentPage" value="{{ currentPage }}"></h5>
+            <h5 id="select_user_id" value="{{ select_user_id }}"></h5>
             <div id="datatable" class="card-body px-0 pb-2">
               <div class="table-responsive p-0">
                 <table class="table align-items-center mb-0">
@@ -122,10 +136,10 @@
                           <td class="align-middle text-center text-sm">
                             {% if data[file]['status'] == "Finish" %}
                             <span class="badge badge-sm bg-gradient-success">FINISH</span>
-                            {% elif data[file]['status'] == "Waiting" %}
-                            <span class="badge badge-sm bg-gradient-warning">WAITING...</span>
+                            {% elif data[file]['status'] == "NotYet" %}
+                            <span class="badge badge-sm bg-gradient-secondary">Not Start</span>
                             {% else %}
-                            <span class="badge badge-sm bg-gradient-secondary">Not_FINISH</span>
+                            <span class="badge badge-sm bg-gradient-warning">{{data[file]['status']}}</span>
                             {% endif %}
                           </td>
                           <!-- datetime -->
@@ -134,7 +148,7 @@
                           </td>
                           <!-- action -->
                           <td class="align-middle text-center text-sm">
-                            {% if data[file]['status'] == "NotYet" or data[file]['status'] == "Waiting" %}
+                            {% if data[file]['status'] == "NotYet" or not data[file]['status'] == "Finish" %}
                             <a href="{{ url_for('identify.insert_file_idenitfy') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
                               IDENTIFY
                             </a>
@@ -148,12 +162,12 @@
                           </td>
                           <!-- result -->
                           <td class="align-middle text-center text-sm">
-                            {% if data[file]['result']['speech'] == True %}
+                            {% if data[file]['result']['speech'] %}
                             <a href="{{ url_for('identify.speech_idenitfy_download') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
                               TRANSLATION
                             </a>
                             {% endif %}
-                            {% if data[file]['result']['emotion'] == True %}
+                            {% if data[file]['result']['emotion'] %}
                             <a href="{{ url_for('identify.emotion_idenitfy_download') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
                               EMOTATION
                             </a>
@@ -162,9 +176,9 @@
                           <!-- edit -->
                           <td class="align-middle text-center text-sm">
                             {% if data[file]['result']['edit'] %}
-                            <a href="{{ url_for('identify.edit') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
-                              EDIT
-                            </a>
+                              <a href="{{ url_for('identify.edit') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
+                                EDIT
+                              </a>
                             {% endif %}
                           </td>
                         </tr>
@@ -220,6 +234,13 @@
             window.location.href = deleteUrl;  // 若用戶點擊了即刪除
         }
     }
+
+  </script>
+  <script>
+    // 獲取下拉選單
+    var dropdown = new bootstrap.Dropdown(document.getElementById("userDropdown"));
+    // 監聽選擇事件
+    
   </script>
   <!-- Github buttons -->
   <script async defer src="https://buttons.github.io/buttons.js"></script>
@@ -254,66 +275,92 @@
     });
   </script>
   {/* button */}
+
+
   <script>
-  var currentPage = document.getElementById("currentPage").getAttribute('value');
-  if (currentPage == 1) {
-    prevButton.disabled = true;
-  }
-  function prevButtonClickHandler() {
-    var contentElement = document.getElementById("table_data");
-    const prevButton = document.getElementById('prevButton');
-    console.log("currentPage:"+currentPage)
-    if (currentPage > 1) {
-      currentPage--;
+    var currentPage = document.getElementById("currentPage").getAttribute('value');
+    var select_user_id = document.getElementById("select_user_id").getAttribute('value');
+    function changeUserList(select_user_id){
+
+      console.log("選擇的使用者名稱：" + select_user_id);
       $.ajax({
         url: '{{ url_for('view.azure') }}', // point to server-side URL
         cache: false,
         contentType: 'application/json;charset=UTF-8',
         processData: false,
-        data: JSON.stringify({"page_number":currentPage}),
+        data: JSON.stringify({"select_user_id":select_user_id,"page_number":currentPage}),
         type: 'post',
         success: function (response) {
           document.documentElement.innerHTML = response;
           currentPage = document.getElementById("currentPage").getAttribute('value');
-          if(currentPage == 1){
-            document.getElementById('prevButton').disabled = true;
+          if(parseInt(currentPage)==parseInt(maxPage)){
+            document.getElementById('nextButton').disabled = true;
           }
-          window.onload()
         },
         error: function (response) {
           console.log(response.message)
-        }
+          window.onload()
+        } 
       });
     }
-  } 
-  function nextButtonClickHandler() {
-    var contentElement = document.getElementById("table_data");
-    const nextButton = document.getElementById('nextButton');
-    const maxPage = Math.ceil({{ file_list_number }} / 10);
-    console.log("maxPage:"+maxPage)
-    if (currentPage < maxPage) {
-        currentPage++;
+    if (currentPage == 1) {
+      prevButton.disabled = true;
+    }
+    function prevButtonClickHandler() {
+      var contentElement = document.getElementById("table_data");
+      const prevButton = document.getElementById('prevButton');
+      console.log("currentPage:"+currentPage)
+      if (currentPage > 1) {
+        currentPage--;
         $.ajax({
           url: '{{ url_for('view.azure') }}', // point to server-side URL
           cache: false,
           contentType: 'application/json;charset=UTF-8',
           processData: false,
-          data: JSON.stringify({"page_number":currentPage}),
+          data: JSON.stringify({"select_user_id":select_user_id,"page_number":currentPage}),
           type: 'post',
           success: function (response) {
             document.documentElement.innerHTML = response;
             currentPage = document.getElementById("currentPage").getAttribute('value');
-            if(parseInt(currentPage)==parseInt(maxPage)){
-              document.getElementById('nextButton').disabled = true;
+            if(currentPage == 1){
+              document.getElementById('prevButton').disabled = true;
             }
+            window.onload()
           },
           error: function (response) {
             console.log(response.message)
-            window.onload()
-          } 
+          }
         });
+      }
+    } 
+    function nextButtonClickHandler() {
+      var contentElement = document.getElementById("table_data");
+      const nextButton = document.getElementById('nextButton');
+      const maxPage = Math.ceil({{ file_list_number }} / 10);
+      if (currentPage < maxPage) {
+          currentPage++;
+          $.ajax({
+            url: '{{ url_for('view.azure') }}', // point to server-side URL
+            cache: false,
+            contentType: 'application/json;charset=UTF-8',
+            processData: false,
+            data: JSON.stringify({"select_user_id":select_user_id,"page_number":currentPage}),
+            type: 'post',
+            success: function (response) {
+
+              document.documentElement.innerHTML = response;
+              currentPage = document.getElementById("currentPage").getAttribute('value');
+              if(parseInt(currentPage)==parseInt(maxPage)){
+                document.getElementById('nextButton').disabled = true;
+              }
+            },
+            error: function (response) {
+              console.log(response.message)
+              window.onload()
+            } 
+          });
+      }
     }
-  }
   </script>
 </body>
 
