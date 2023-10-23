@@ -148,7 +148,7 @@
                           </td>
                           <!-- action -->
                           <td class="align-middle text-center text-sm">
-                            {% if data[file]['status'] == "NotYet" or data[file]['status'] == "Waiting" %}
+                            {% if data[file]['status'] == "NotYet" or not data[file]['status'] == "Finish" %}
                             <a href="{{ url_for('identify.insert_file_idenitfy') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
                               IDENTIFY
                             </a>
@@ -162,12 +162,12 @@
                           </td>
                           <!-- result -->
                           <td class="align-middle text-center text-sm">
-                            {% if data[file]['result']['speech'] == True %}
+                            {% if data[file]['result']['speech'] %}
                             <a href="{{ url_for('identify.speech_idenitfy_download') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
                               TRANSLATION
                             </a>
                             {% endif %}
-                            {% if data[file]['result']['emotion'] == True %}
+                            {% if data[file]['result']['emotion'] %}
                             <a href="{{ url_for('identify.emotion_idenitfy_download') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
                               EMOTATION
                             </a>
@@ -317,7 +317,7 @@
           cache: false,
           contentType: 'application/json;charset=UTF-8',
           processData: false,
-          data: JSON.stringify({"user_name":username,"page_number":currentPage}),
+          data: JSON.stringify({"select_user_id":select_user_id,"page_number":currentPage}),
           type: 'post',
           success: function (response) {
             document.documentElement.innerHTML = response;
@@ -344,9 +344,10 @@
             cache: false,
             contentType: 'application/json;charset=UTF-8',
             processData: false,
-            data: JSON.stringify({"user_name":username,"page_number":currentPage}),
+            data: JSON.stringify({"select_user_id":select_user_id,"page_number":currentPage}),
             type: 'post',
             success: function (response) {
+
               document.documentElement.innerHTML = response;
               currentPage = document.getElementById("currentPage").getAttribute('value');
               if(parseInt(currentPage)==parseInt(maxPage)){

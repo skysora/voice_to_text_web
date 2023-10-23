@@ -69,7 +69,7 @@ def azure():
             check_speech(file_name)
             
         #process_speech_result
-        if os.path.exists(f'{file.origin_text_file_path}'):
+        if os.path.exists(f'{file.origin_text_file_path}') and os.path.exists(f'{file.submit_text_file_path}'):
             data[file_name]['result']['speech'] = True
             file.modified_text_file_path = f'{PROCESS_SPEECH_RESULT_FOLDER}{file_name}'
             db.session.commit()
@@ -82,8 +82,7 @@ def azure():
         text_path = f'{file.modified_text_file_path}/text/'
         # 產生情緒辨識檔案
         if (file.modified_text_file_path != None):
-            
-            if (os.path.exists(file.modified_text_file_path) and (file.origin_emotion_file_path==None or len(os.listdir(file.origin_emotion_file_path))!=len(os.listdir(text_path)))):
+            if os.path.exists(file.modified_text_file_path) and (file.origin_emotion_file_path == None or not os.path.exists(file.origin_emotion_file_path) or len(os.listdir(file.origin_emotion_file_path))!=len(os.listdir(text_path))):
                 file.origin_emotion_file_path = f'{EMOTION_RESULT_FOLDER}{file.title}'
                 db.session.commit()
                 # emotion_identify(file)
@@ -100,10 +99,11 @@ def azure():
             except:
                 pass
             
-        
-        if(len(os.listdir(audio_path)) == len(os.listdir(text_path)) and (int(select_user_id)==int(current_user.id))):
-            data[file_name]['result']['edit'] = True
-            
+        try:
+            if(len(os.listdir(audio_path)) == len(os.listdir(text_path)) and (int(select_user_id)==int(current_user.id))):
+                data[file_name]['result']['edit'] = True
+        except:
+            pass
             
         if(os.path.exists(f'{TEXT_OUTPUT}{file_name}.txt')):
             data[file_name]['result']['text'] = True
@@ -111,18 +111,20 @@ def azure():
         #判斷狀態
         if(data[file_name]['result']['emotion'] and data[file_name]['result']['speech'] and data[file_name]['result']['text']):
             data[file_name]['status'] = "Finish"
-        elif(not data[file_name]['result']['emotion']):
-            data[file_name]['status'] = "Emototion Waiting" 
+        elif(not data[file_name]['result']['emotion'] and not data[file_name]['result']['speech'] and not data[file_name]['result']['text']):
+            data[file_name]['status'] = "NotYet"
+            
         elif(not data[file_name]['result']['speech']):
             data[file_name]['status'] = "Speech Waiting"
-        elif(data[file_name]['result']['text']):
+        elif(not data[file_name]['result']['text']):
             data[file_name]['status'] = "Text Waiting"
-        else:
-            data[file_name]['status'] = "NotYet"
+        elif(not data[file_name]['result']['emotion']):
+            data[file_name]['status'] = "Emototion Waiting" 
             
     return render_template('view/azure.html',data=data,file_list = file_list[(page_number-1)*page_limit:page_number*page_limit],
                            file_list_number=len(user_files),currentPage=page_number,user_list = all_users,
-                           select_user_id = select_user_id,select_user_flag = select_user_flag)
+                           select_user_id = select_user_id,select_user_flag = select_user_flag,
+                           )
     
     
 @view_blueprint.route("/voice")
