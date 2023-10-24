@@ -186,6 +186,37 @@ def emotion_idenitfy_download():
         
     return send_file(f'{EMOTION_RESULT_FOLDER}{file_name}.zip',as_attachment=True)
     
+@identifly_blueprint.route('/text_file_generate', methods=['get'])
+def text_file_generate():
+    file_name = request.args.get('name')
+        
+    file = File.query.filter_by(title=file_name).first()
+    
+    
+    text_path = f"{file.modified_text_file_path}/text"
+    
+    if (not os.path.exists(f"{text_path}")):
+        return redirect(url_for('azure'))
+    
+    output_file_path = f"{TEXT_OUTPUT}{file_name}.txt"
+    # 打开输出文件以进行写入
+    with open(output_file_path, "w", encoding="utf-8") as output_file:
+        # 遍历指定目录下的所有文件
+        for filename in range(len(os.listdir(f"{text_path}"))):
+            
+            file_path = os.path.join(f"{text_path}", f'{filename}.txt')
+
+            # 打开并读取当前文本文件的内容
+            with open(file_path, "r", encoding="utf-8") as input_file:
+                file_contents = input_file.read()
+
+                # 将当前文本文件的内容写入输出文件
+                output_file.write(file_contents)
+                output_file.write("\n")  # 在每个文件的内容之间添加换行符
+        
+        
+    return redirect(url_for('identify.edit', name=file_name))
+
 
 @identifly_blueprint.route('/edit', methods=['get'])
 def edit():

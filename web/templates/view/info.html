@@ -109,12 +109,11 @@
                             </audio>
                           </td>
                           <td style="text-align: center; vertical-align: middle;">
-                              <button class="submit-button" onclick="submitEditedText('{{ pharses }}')">更改</button>
+                            <button class="submit-button" onclick="submitEditedText('{{ pharses }}')">更改</button>
                           </td>
                         </tr>
                         {% endfor %}
                         <tr>
-                          <td></td>
                           <td></td>
                           <td class="text-align: center; vertical-align: middle;">
                             <div class="d-flex justify-content-end align-items-center">
@@ -125,6 +124,9 @@
                                     <i class="material-icons text-lg">chevron_right</i>
                                 </a>
                             </div>
+                          </td>
+                          <td>
+                            <a class="submit-button" href="{{ url_for('identify.text_file_generate', name=file_info.next_file) }}">儲存</a>
                           </td>
                         </tr>
                       </tbody>
@@ -137,7 +139,7 @@
             <!-- context -->
           </div>
 
-        </div>
+      </div>
       </div>
       {% include './component/footer.html' %}
     </div>
