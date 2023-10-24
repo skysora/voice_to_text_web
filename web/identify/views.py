@@ -196,7 +196,7 @@ def text_file_generate():
     text_path = f"{file.modified_text_file_path}/text"
     
     if (not os.path.exists(f"{text_path}")):
-        return redirect(url_for('azure'))
+        return redirect(url_for('view.azure'))
     
     output_file_path = f"{TEXT_OUTPUT}{file_name}.txt"
     # 打开输出文件以进行写入

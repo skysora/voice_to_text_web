@@ -80,7 +80,13 @@ def azure():
             if not os.path.exists(f'{file.modified_text_file_path}'):
                 os.makedirs(f'{file.modified_text_file_path}/audio/')
                 os.makedirs(f'{file.modified_text_file_path}/text/')
-            if ((not os.path.exists(file.modified_text_file_path))):
+
+            audio_path = f'{file.modified_text_file_path}/audio/'
+            text_path = f'{file.modified_text_file_path}/text/'
+            with open('./web/test.txt','w') as test:
+                test.write(str(len(os.listdir(f'{file.modified_text_file_path}/audio/')) != len(f'{file.modified_text_file_path}/text/')))
+
+            if (len(os.listdir(audio_path)) != len(os.listdir(text_path)) or len(os.listdir(audio_path)) == 0 ):
                 task_thread = threading.Thread(target=generate_process_speech_result,args=((file.title,file.origin_text_file_path,file.file_path,file.modified_text_file_path)))
                 task_thread.start()
            
@@ -214,6 +220,8 @@ def generate_process_speech_result(filename,text_path,audio_file_path,modified_t
     audio = AudioSegment.from_file(audio_file_path, format="mp3")
     count = 0
     for phrases in text_data['recognizedPhrases']:
+        if(phrases['channel']!=0):
+            continue
         start_time = float(phrases['offsetInTicks'])/10000
         end_time  = start_time + float(phrases['durationInTicks'])/10000
         # 切出特定时间段的音频

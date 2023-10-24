@@ -24,9 +24,9 @@ def setup_database(app):
       db.create_all()
 
 # with app.app_context():
-  # user = User.query.filter_by(username="lila_sikalirui").first()
-  # user.permissions = UserRoleEnum.ADMIN
-  # db.session.commit()
+#   user = User.query.filter_by(username="lila_sikalirui").first()
+#   user.permissions = UserRoleEnum.ADMIN
+#   db.session.commit()
 #   with open('./web/test.txt','w') as test:
 #     test.write(str(user.permissions))
   # db.create_all()  
