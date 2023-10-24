@@ -85,13 +85,16 @@ def azure():
         audio_path = f'{file.modified_text_file_path}/audio/'
         text_path = f'{file.modified_text_file_path}/text/'
         # 產生情緒辨識檔案
-        if (file.modified_text_file_path != None) and (len(os.listdir(audio_path)) == len(os.listdir(text_path))):
-            if os.path.exists(file.modified_text_file_path) and (file.origin_emotion_file_path == None or not os.path.exists(file.origin_emotion_file_path) or len(os.listdir(file.origin_emotion_file_path))!=len(os.listdir(text_path))):
-                file.origin_emotion_file_path = f'{EMOTION_RESULT_FOLDER}{file.title}'
-                db.session.commit()
-                # emotion_identify(file)
-                task_thread = threading.Thread(target=emotion_identify,args=((file.title,file.modified_text_file_path)))
-                task_thread.start()
+        try:
+            if (file.modified_text_file_path != None) and (len(os.listdir(audio_path)) == len(os.listdir(text_path))):
+                if os.path.exists(file.modified_text_file_path) and (file.origin_emotion_file_path == None or not os.path.exists(file.origin_emotion_file_path) or len(os.listdir(file.origin_emotion_file_path))!=len(os.listdir(text_path))):
+                    file.origin_emotion_file_path = f'{EMOTION_RESULT_FOLDER}{file.title}'
+                    db.session.commit()
+                    # emotion_identify(file)
+                    task_thread = threading.Thread(target=emotion_identify,args=((file.title,file.modified_text_file_path)))
+                    task_thread.start()
+        except:
+            pass
 
     
         
