@@ -36,7 +36,7 @@
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
             <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">主要頁面</a></li>
-            <li class="breadcrumb-item text-sm text-dark active" aria-current="page">資料表</li>
+            <li class="breadcrumb-item text-sm text-dark active" aria-current="page">紀錄統整</li>
           </ol>
         </nav>
         <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
@@ -55,6 +55,7 @@
       </div>
     </nav>
     <!-- End Navbar -->
+    {% if user_list != None %}
     <div class="container-fluid py-4">
       <!-- table -->
       <div class="row mb-4">
@@ -64,146 +65,68 @@
             <div class="card-header pb-0">
               <div class="row justify-content-between">
                 <div class="col-lg-6 col-6">
-                  <h6>紀錄</h6>
+                  <h6>紀錄統整</h6>
                 </div> 
-                <div class="col-lg-6 col-6 text-end">
-                  {% if user_list != None %}
-                  <!-- 下拉式選單 -->
-                  <div class="dropdown">
-                    <button class="btn bg-gradient-dark dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                      選擇使用者
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="userDropdown">
-                      <!-- 使用者選項 - 使用模板引擎生成 -->
-                      {% for user in user_list %}
-                        <li>
-                          <a class="dropdown-item user-option" onclick="changeUserList('{{ user.id }}')">{{ user.username }}</a>
-                        </li>
-                      {% endfor %}
-                      <!-- 添加更多使用者選項 -->
-                    </ul>
-                  </div>
-                  {% endif %}
-                  <!-- End 下拉式選單 -->
-                  {% if select_user_flag %}
-                  <label class="btn bg-gradient-dark mb-0">
-                    <i class="material-icons text-sm">weekend</i>&nbsp;&nbsp;上傳檔案
-                    <input type="file" style="display: none;" id="file-uploader" data-target="file-uploader" accept=".wav,.mp3" multiple="multiple"/>
-                  </label>
-                  {% endif %}
-                </div>
               </div>
             </div>
             <!-- table -->
             <h5 id="currentPage" value="{{ currentPage }}"></h5>
             <h5 id="select_user_id" value="{{ select_user_id }}"></h5>
             <div id="datatable" class="card-body px-0 pb-2">
-              <div class="table-responsive p-0">
+              <div class="table-responsive">
                 <table class="table align-items-center mb-0">
-                  <thead>
-                    <tr>
-                      <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">ITEM</th>
-                      <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">USER</th>
-                      <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
-                      <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">TIME</th>
-                      <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Action</th>
-                      <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">RESULT</th>
-                      <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">EDIT</th>
-                    </tr>
-                  </thead>
-                  <div id="table_data">
-                    <tbody>
-                      {% for file in file_list %}
-                        <tr>
-                          <td>
+                   <thead>
+                      <tr>
+                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">使用者</th>
+                         <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">上傳檔案總數</th>
+                         <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">語音辨識完成數量</th>
+                         <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">情緒辨識完成數量</th>
+                         <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">文字檢查完成數量</th>
+                         <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">全部進度</th>
+                      </tr>
+                   </thead>
+                   <tbody>
+                    {% for user in user_list %}
+                      <tr>
+                        <td>
                             <div class="d-flex px-2 py-1">
-                              <div>
-                                <img src="{{ url_for('static', filename='/assets/img/sound-recognition.png') }}" class="avatar avatar-sm me-3 border-radius-lg" alt="user1">
-                              </div>
-                              <div class="d-flex flex-column justify-content-center">
-                                <a href="javascript:;" class="bold font-weight-bold text-xs">
-                                  {{file}}
-                                </a>
-                                <p class="text-xs text-secondary mb-0">---</p>
-                              </div>
+                               <div>
+                                  <img src="{{ url_for('static', filename='/assets/img/woman.png') }}" class="avatar avatar-sm me-3" alt="xd">
+                               </div>
+                               <div class="d-flex flex-column justify-content-center">
+                                  <h6 class="mb-0 text-sm">{{ user.username }}</h6>
+                               </div>
                             </div>
-                          </td>
-                          <td>
-                            <p class="text-xs font-weight-bold mb-0">{{data[file]['User']}}</p>
-                          </td>
-                          <!-- status -->
-                          <td class="align-middle text-center text-sm">
-                            {% if data[file]['status'] == "Finish" %}
-                            <span class="badge badge-sm bg-gradient-success">FINISH</span>
-                            {% elif data[file]['status'] == "NotYet" %}
-                            <span class="badge badge-sm bg-gradient-secondary">Not Start</span>
-                            {% else %}
-                            <span class="badge badge-sm bg-gradient-warning">{{data[file]['status']}}</span>
-                            {% endif %}
-                          </td>
-                          <!-- datetime -->
-                          <td class="align-middle text-center">
-                            <span class="text-secondary text-xs font-weight-bold">{{ data[file]['datetime'] }}</span>
-                          </td>
-                          <!-- action -->
-                          <td class="align-middle text-center text-sm">
-                            {% if not data[file]['result']['submit'] %}
-                            <a href="{{ url_for('identify.insert_file_idenitfy') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
-                              IDENTIFY
-                            </a>
-                            {% endif %}
-                            <a href="{{ url_for('identify.download_file') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="下載音訊">
-                              DOWNLOAD
-                            </a>
-                            <a href="javascript:void(0);" class="text-secondary font-weight-bold text-xs" onclick="confirmDelete('{{ url_for('identify.delete_file') }}?name={{ file }}')" data-toggle="刪除" >
-                              DELETE
-                            </a>
-                          </td>
-                          <!-- result -->
-                          <td class="align-middle text-center text-sm">
-                            {% if data[file]['result']['speech'] %}
-                            <a href="{{ url_for('identify.speech_idenitfy_download') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
-                              TRANSLATION
-                            </a>
-                            {% endif %}
-                            {% if data[file]['result']['emotion'] %}
-                            <a href="{{ url_for('identify.emotion_idenitfy_download') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
-                              EMOTATION
-                            </a>
-                            {% endif %}
-                          </td>
-                          <!-- edit -->
-                          <td class="align-middle text-center text-sm">
-                            {% if data[file]['result']['edit'] %}
-                              <a href="{{ url_for('identify.edit') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
-                                EDIT
-                              </a>
-                            {% endif %}
-                          </td>
-                        </tr>
-                      {% endfor %}
-                        <tr>
-                          <td></td>
-                          <td></td>
-                          <td></td>
-                          <td></td>
-                          <td></td>
-                          <td></td>
-                          <td class="align-middle text-center text-sm">
-                            <div class="d-flex justify-content-end">
-                              <button onclick=prevButtonClickHandler() id="prevButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
-                                <i class="material-icons text-lg">chevron_left</i>
-                              </button>
-                              <button onclick=nextButtonClickHandler() id="nextButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
-                                <i class="material-icons text-lg">chevron_right</i>
-                              </button>
+                        </td>
+                        <td class="align-middle text-center text-sm">
+                          <span class="text-xs font-weight-bold"> {{user.upload }}</span>
+                        </td>
+                        <td class="align-middle text-center text-sm">
+                            <span class="text-xs font-weight-bold">{{ user.speech}} </span>
+                        </td>
+                        <td class="align-middle text-center text-sm">
+                          <span class="text-xs font-weight-bold"> {{user.emotion }}</span>
+                        </td>
+                        <td class="align-middle text-center text-sm">
+                          <span class="text-xs font-weight-bold">{{ user.text }}</span>
+                        </td>
+                        <td class="align-middle">
+                            <div class="progress-wrapper w-75 mx-auto">
+                               <div class="progress-info">
+                                  <div class="progress-percentage">
+                                     <span class="text-xs font-weight-bold">{{user.total}}%</span>
+                                  </div>
+                               </div>
+                               <div class="progress">
+                                <div class="progress-bar bg-gradient-info" style="width: {{ user.total }}%;" role="progressbar" aria-valuenow="{{ user.total }}" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
-                          </td>
-                        </tr>
-                    </tbody>
-                  </div>
+                            </div>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                   </tbody>
                 </table>
-              </div>
+             </div>
             </div>
           </div>
 
@@ -211,6 +134,11 @@
       </div>
       {% include './component/footer.html' %}
     </div>
+    {% else %}
+    <div class="container-fluid py-4">
+      <h5>你沒有權限</h5>
+    </div>
+    {% endif %}
     </main>
   <!--   Core JS Files   -->
   <script src="{{ url_for('static', filename='/assets/js/core/popper.min.js') }}"></script>
