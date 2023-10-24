@@ -77,27 +77,24 @@ def azure():
             data[file_name]['result']['speech'] = True
             file.modified_text_file_path = f'{PROCESS_SPEECH_RESULT_FOLDER}{file_name}'
             db.session.commit()
+            if not os.path.exists(f'{file.modified_text_file_path}'):
+                os.makedirs(f'{file.modified_text_file_path}/audio/')
+                os.makedirs(f'{file.modified_text_file_path}/text/')
             if ((not os.path.exists(file.modified_text_file_path))):
                 task_thread = threading.Thread(target=generate_process_speech_result,args=((file.title,file.origin_text_file_path,file.file_path,file.modified_text_file_path)))
                 task_thread.start()
            
-
         audio_path = f'{file.modified_text_file_path}/audio/'
         text_path = f'{file.modified_text_file_path}/text/'
         # 產生情緒辨識檔案
-        try:
-            if (file.modified_text_file_path != None) and (len(os.listdir(audio_path)) == len(os.listdir(text_path))):
-                if os.path.exists(file.modified_text_file_path) and (file.origin_emotion_file_path == None or not os.path.exists(file.origin_emotion_file_path) or len(os.listdir(file.origin_emotion_file_path))!=len(os.listdir(text_path))):
-                    file.origin_emotion_file_path = f'{EMOTION_RESULT_FOLDER}{file.title}'
-                    db.session.commit()
-                    # emotion_identify(file)
-                    task_thread = threading.Thread(target=emotion_identify,args=((file.title,file.modified_text_file_path)))
-                    task_thread.start()
-        except:
-            pass
+        if (file.modified_text_file_path != None) and (len(os.listdir(audio_path)) == len(os.listdir(text_path))):
+            if os.path.exists(file.modified_text_file_path) and (file.origin_emotion_file_path == None or not os.path.exists(file.origin_emotion_file_path) or len(os.listdir(file.origin_emotion_file_path))!=len(os.listdir(text_path))):
+                file.origin_emotion_file_path = f'{EMOTION_RESULT_FOLDER}{file.title}'
+                db.session.commit()
+                # emotion_identify(file)
+                task_thread = threading.Thread(target=emotion_identify,args=((file.title,file.modified_text_file_path)))
+                task_thread.start()
 
-    
-        
         #情緒辨識結果
         if(file.origin_emotion_file_path != None):
             try:
@@ -111,17 +108,16 @@ def azure():
                 data[file_name]['result']['edit'] = True
         except:
             pass
-            
+        
+        # 編輯
         if(os.path.exists(f'{TEXT_OUTPUT}{file_name}.txt')):
             data[file_name]['result']['text'] = True
             
         #判斷狀態
         if(data[file_name]['result']['emotion'] and data[file_name]['result']['speech'] and data[file_name]['result']['text']):
-            data[file_name]['status'] = "Finish"
-        
+            data[file_name]['status'] = "Finish"  
         elif(not data[file_name]['result']['emotion'] and not data[file_name]['result']['speech'] and not data[file_name]['result']['text']):
-            data[file_name]['status'] = "NotYet"
-            
+            data[file_name]['status'] = "NotYet"        
         elif(not data[file_name]['result']["submit"]):
             data[file_name]['status'] = "Speech Waiting"
         elif(not data[file_name]['result']['text']):
@@ -135,9 +131,51 @@ def azure():
                            )
     
     
-@view_blueprint.route("/voice")
-def voice():
-    return render_template('voice.html')
+@view_blueprint.route("/manage")
+def manage():
+    user = User.query.filter_by(id=current_user.id).first()
+    if (user.permissions == UserRoleEnum.ADMIN):
+        all_users =  User.query.all()
+        total_data = []
+        for user in all_users:
+            data = {"username":"","upload":"","speech":"","emotion":"","text":"","total":""}
+            data["username"]  = user.username
+            data["upload"]  = len(File.query.filter_by(user_id=user.id).all())
+            data["speech"]  = 0
+            data["emotion"]  = 0
+            data["text"]  = 0
+            data["total"]  = 0
+            for file in File.query.filter_by(user_id=user.id).all():
+                # speech
+                try:
+                    if(os.path.exists(f'{file.origin_text_file_path}')):
+                        data["speech"]+=1
+                except:
+                    pass
+                # emotion
+                try:
+                    text_path = f'{file.modified_text_file_path}/text/'
+                    if(len(os.listdir(file.origin_emotion_file_path)) == len(os.listdir(text_path))):
+                        data["emotion"]+=1 
+                except:
+                    pass
+                # text
+                if(os.path.exists(f'{TEXT_OUTPUT}{file.title}.txt')):
+                    data["text"]+=1 
+
+                try:
+                    if((os.path.exists(f'{file.origin_text_file_path}')) and (len(os.listdir(file.origin_emotion_file_path)) == len(os.listdir(text_path))) and os.path.exists(f'{TEXT_OUTPUT}{file.title}.txt')):
+                        data["total"]  += 1
+                except:
+                    pass
+            try:
+                data["total"] = int(data["total"]/data["upload"]*100)
+            except:
+                data["total"] = 0
+            total_data.append(data)
+        return render_template('view/manage.html',user_list=total_data)
+    else:
+        return render_template('view/manage.html',user_list=None)
 
 
 def check_speech(file_name):
@@ -174,12 +212,6 @@ def generate_process_speech_result(filename,text_path,audio_file_path,modified_t
         text_data = json.load(file_text)
         
     audio = AudioSegment.from_file(audio_file_path, format="mp3")
-    
-    
-    if not os.path.exists(f'{modified_text_file_path}'):
-        os.makedirs(f'{modified_text_file_path}/audio/')
-        os.makedirs(f'{modified_text_file_path}/text/')
-        
     count = 0
     for phrases in text_data['recognizedPhrases']:
         start_time = float(phrases['offsetInTicks'])/10000
