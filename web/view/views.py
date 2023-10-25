@@ -68,7 +68,7 @@ def azure():
         if (os.path.exists(f'{file.submit_text_file_path}')):
             data[file_name]['result']["submit"] = True
 
-        #speech 
+
         if (not os.path.exists(f'{file.origin_text_file_path}')) and (os.path.exists(f'{file.submit_text_file_path}')):
             check_speech(file_name)
             
@@ -83,11 +83,8 @@ def azure():
 
             audio_path = f'{file.modified_text_file_path}/audio/'
             text_path = f'{file.modified_text_file_path}/text/'
-            with open('./web/test.txt','w') as test:
-                test.write(str(len(os.listdir(f'{file.modified_text_file_path}/audio/')) != len(f'{file.modified_text_file_path}/text/')))
-
             if (len(os.listdir(audio_path)) != len(os.listdir(text_path)) or len(os.listdir(audio_path)) == 0 ):
-                task_thread = threading.Thread(target=generate_process_speech_result,args=((file.title,file.origin_text_file_path,file.file_path,file.modified_text_file_path)))
+                task_thread = threading.Thread(target=generate_process_speech_result,args=((file.title,file.origin_text_file_path,file.file_path,f'{PROCESS_SPEECH_RESULT_FOLDER}{file_name}')))
                 task_thread.start()
            
         audio_path = f'{file.modified_text_file_path}/audio/'
@@ -115,6 +112,11 @@ def azure():
         except:
             pass
         
+        try:
+            if(os.path.exists(f'{SPEECH_RESULT_FOLDER}{file_name}.txt') and ((len(os.listdir(audio_path)) == len(os.listdir(text_path))))):
+                data[file_name]['result']['speech'] = True
+        except:
+            pass
         # 編輯
         if(os.path.exists(f'{TEXT_OUTPUT}{file_name}.txt')):
             data[file_name]['result']['text'] = True
@@ -122,8 +124,9 @@ def azure():
         #判斷狀態
         if(data[file_name]['result']['emotion'] and data[file_name]['result']['speech'] and data[file_name]['result']['text']):
             data[file_name]['status'] = "Finish"  
-        elif(not data[file_name]['result']['emotion'] and not data[file_name]['result']['speech'] and not data[file_name]['result']['text']):
+        elif(not data[file_name]['result']["submit"] and not data[file_name]['result']['emotion'] and not data[file_name]['result']['speech'] and not data[file_name]['result']['text']):
             data[file_name]['status'] = "NotYet"        
+        
         elif(not data[file_name]['result']["submit"]):
             data[file_name]['status'] = "Speech Waiting"
         elif(not data[file_name]['result']['text']):
@@ -237,9 +240,10 @@ def check_exitst_answer(file):
     
     file_name = f'{file.title}'
     
-    
-    if os.path.exists(f'{SPEECH_RESULT_FOLDER}{file_name}.json'):
+    if os.path.exists(f'{SUMIT_FOLDER}{file_name}.json'):
         file.submit_text_file_path = f"{SUMIT_FOLDER}{file_name}.json"
+        
+    if os.path.exists(f'{SPEECH_RESULT_FOLDER}{file_name}.json'):
         file.origin_text_file_path = f"{SPEECH_RESULT_FOLDER}{file_name}.json"
     
     if os.path.exists(f'{EMOTION_RESULT_FOLDER}{file_name}'): 

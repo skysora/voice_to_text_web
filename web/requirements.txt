@@ -1,0 +1,10 @@
+gunicorn
+gevent
+flask_sqlalchemy
+flask_bcrypt
+flask_wtf
+pytz
+pydub
+azure-storage-blob
+hume
+opencc

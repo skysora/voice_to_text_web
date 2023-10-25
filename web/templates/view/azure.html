@@ -174,7 +174,7 @@
                           </td>
                           <!-- edit -->
                           <td class="align-middle text-center text-sm">
-                            {% if data[file]['result']['edit'] %}
+                            {% if data[file]['result']['speech'] %} 
                               <a href="{{ url_for('identify.edit') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
                                 EDIT
                               </a>
