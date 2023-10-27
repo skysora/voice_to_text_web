@@ -308,6 +308,7 @@
     function prevButtonClickHandler() {
       var contentElement = document.getElementById("table_data");
       const prevButton = document.getElementById('prevButton');
+      select_user_id = document.getElementById("select_user_id").getAttribute('value');
       console.log("currentPage:"+currentPage)
       if (currentPage > 1) {
         currentPage--;
@@ -335,6 +336,7 @@
     function nextButtonClickHandler() {
       var contentElement = document.getElementById("table_data");
       const nextButton = document.getElementById('nextButton');
+      select_user_id = document.getElementById("select_user_id").getAttribute('value');
       const maxPage = Math.ceil({{ file_list_number }} / 10);
       if (currentPage < maxPage) {
           currentPage++;

@@ -1,5 +1,6 @@
 source myenv/bin/activate
 
+export FLASK_APP=web.app
 flask db init -d web/migrations/
 flask db migrate -d web/migrations/ -m "Update model with new column"
 flask db  upgrade -d web/migrations/

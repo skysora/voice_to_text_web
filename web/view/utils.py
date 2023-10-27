@@ -25,8 +25,8 @@ def check_exitst_path(file):
     
     file_name = f'{file.title}'
     #singal
-    if os.path.exists(f"{UPLOAD_FOLDER}{file_name}"):
-        file.singal_file_path = f"{UPLOAD_FOLDER}{file_name}"
+    file.singal_file_path = f"{UPLOAD_FOLDER}{file_name}"
+    
     #submit
     if os.path.exists(f"{SUMIT_FOLDER}{file_name}.json"):
         file.submit_text_file_path = f"{SUMIT_FOLDER}{file_name}.json"
