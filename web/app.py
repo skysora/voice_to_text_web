@@ -8,6 +8,7 @@ from web.auth.views import auth_blueprint
 from web.view.views import view_blueprint
 from web.identity.views import identity_blueprint
 from web.models.models import User,UserRoleEnum
+from flask_migrate import Migrate
 
 app = Flask(__name__)
 app.config.from_object(TestingConfig) 
@@ -17,7 +18,7 @@ app.register_blueprint(identity_blueprint)
 db.init_app(app) 
 bctrypt.init_app(app)
 login_manager.init_app(app)
-    
+migrate = Migrate(app, db)
 
 def setup_database():
   with app.app_context():

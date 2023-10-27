@@ -7,9 +7,9 @@ import subprocess
 import shutil
 import threading
 from web.database import db 
-from web.models.models import File
+from web.models.models import File,User
 from flask_login import current_user, login_required
-# from opencc import OpenCC
+from opencc import OpenCC
 
 identity_blueprint = Blueprint('identify', __name__, template_folder='templates')
 UPLOAD_FOLDER = '/web/data/signal/'
@@ -32,7 +32,7 @@ def upload_file():
         # Create a new File object and associate it with the current user
         new_file = File(
             title=filename,
-            file_path=os.path.join(UPLOAD_FOLDER, filename),
+            singal_file_path=os.path.join(UPLOAD_FOLDER, filename),
             user_id=current_user.id  # Assuming your user model has an 'id' field
         )
         db.session.add(new_file)
@@ -42,51 +42,56 @@ def upload_file():
 @identity_blueprint.route('/download_file', methods=['get'])
 def download_file():
     file_name = request.args.get('name')
-    return send_file(f'{UPLOAD_FOLDER}{file_name}',as_attachment=True)
+    file = File.query.filter(File.title.like(file_name)).first()
+    return send_file(f'{file.singal_file_path}',as_attachment=True)
 
 
 @identity_blueprint.route('/delete_file', methods=['get'])
 def delete_file():
     file_name = request.args.get('name')
-    file = File.query.filter_by(title=file_name).first()
+    file = File.query.filter_by(title=file_name, user_id=current_user.id).first()
+     
+    other_file = File.query.filter_by(title=file_name).all()
     
+    with open('./web/test.txt','w') as test:
+        test.write(f'{len(other_file)}')
     
-    #singal
-    if os.path.exists(file.file_path):
-        os.remove(file.file_path)
-        
-
-    #speech
-    try:
-        if os.path.exists(file.submit_text_file_path):
-            os.remove(file.submit_text_file_path)
-        if os.path.exists(file.origin_text_file_path):
-            os.remove(file.origin_text_file_path)
-    except:
-        pass
+    # 如果没有其他用户与文件关联，则删除文件
+    if len(other_file)==1:
+        #singal
+        if os.path.exists(file.singal_file_path):
+            os.remove(file.singal_file_path)
+        #speech
+        try:
+            if os.path.exists(file.submit_text_file_path):
+                os.remove(file.submit_text_file_path)
+            if os.path.exists(file.origin_text_file_path):
+                os.remove(file.origin_text_file_path)
+        except:
+            pass
+        #process
+        try:
+            if os.path.exists(file.process_speech_file_path):
+                shutil.rmtree(file.process_speech_file_path)
+        except:
+            pass
+        #emotion
+        try:
+            if os.path.exists(file.origin_emotion_file_path):
+                shutil.rmtree(file.origin_emotion_file_path)
+            #emotion zip
+            if os.path.exists(file.origin_emotion_file_path+'.zip'):
+                os.remove(file.origin_emotion_file_path+'.zip')
+        except:
+            pass
+        #text
+        try:
+            if os.path.exists(f'{file.modified_text_file_path}'):
+                os.remove(f'{file.modified_text_file_path}.txt')
+        except:
+            pass
     
-    #emotion
-    try:
-        if os.path.exists(file.origin_emotion_file_path):
-            shutil.rmtree(file.origin_emotion_file_path)
-        #emotion zip
-        if os.path.exists(file.origin_emotion_file_path+'.zip'):
-            os.remove(file.origin_emotion_file_path+'.zip')
-    except:
-        pass
-
-    #text
-    try:
-        if os.path.exists(f'{TEXT_OUTPUT}{file_name}.txt'):
-            os.remove(f'{TEXT_OUTPUT}{file_name}.txt')
-    
-    except:
-        pass
-        
-        
-          
-    file_to_delete = File.query.filter_by(title=file_name).first()
-    db.session.delete(file_to_delete)
+    db.session.delete(file)
     db.session.commit()
     return redirect(url_for('view.azure'))
 
@@ -251,7 +256,11 @@ def edit():
     else:
         next_file_title = file_list[now_index+1]
     
-    audio_path = file.file_path.replace('/web/data','')
+    
+    with open('./web/test.txt','w') as test:
+        test.write(f"{file.title},{file.singal_file_path}")
+        
+    audio_path = file.singal_file_path.replace('/web/data','')
     file_info = {"file_name":file_name,'previous_file':previous_file_title,'next_file':next_file_title,'audio':audio_path}
     
 

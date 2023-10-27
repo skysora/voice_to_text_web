@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y wget apt-transport-https && \
     apt-get upgrade -y && \
     apt-get install -y dotnet-sdk-6.0
 
+
+RUN apt install build-essential -y
+
 # 安裝Python 3.8和一些額外軟件包
 RUN apt-get install -y python3.8 python3.8-distutils ffmpeg wget
 
@@ -32,5 +35,6 @@ RUN dotnet tool install --global Microsoft.CognitiveServices.Speech.CLI
 ENV PATH="${PATH}:/root/.dotnet/tools"
 
 # 定義容器啟動命令
-CMD gunicorn app:app -c ./web/gunicorn.conf.py --pythonpath ./web
+# CMD gunicorn app:app -c ./web/gunicorn.conf.py --pythonpath ./web 
+
 

@@ -1,6 +1,10 @@
 source myenv/bin/activate
 
-/home/ec2-user/myweb/tutorial-env/bin/gunicorn -b localhost:8000 app:app
+flask db init -d web/migrations/
+flask db migrate -d web/migrations/ -m "Update model with new column"
+flask db  upgrade -d web/migrations/
+
+
 
 /home/ec2-user/myweb
 sudo vim /etc/systemd/system/myweb.service

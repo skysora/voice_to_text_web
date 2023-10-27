@@ -161,7 +161,7 @@
                           </td>
                           <!-- result -->
                           <td class="align-middle text-center text-sm">
-                            {% if data[file]['result']['speech'] %}
+                            {% if data[file]['result']['process_speech'] %}
                             <a href="{{ url_for('identify.speech_idenitfy_download') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
                               TRANSLATION
                             </a>
@@ -174,7 +174,7 @@
                           </td>
                           <!-- edit -->
                           <td class="align-middle text-center text-sm">
-                            {% if data[file]['result']['speech'] %} 
+                            {% if data[file]['result']['process_speech'] %} 
                               <a href="{{ url_for('identify.edit') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
                                 EDIT
                               </a>

@@ -11,6 +11,7 @@ def user_loader(id):
     user = User.query.get(int(id))
     return user
 
+
 class UserRoleEnum(Enum):
     ADMIN = "admin"
     NORMAL = "normal"
@@ -31,11 +32,19 @@ class File(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(20), nullable=False)
-    file_path = db.Column(db.String(20), nullable=False)
+    #origin singal path
+    singal_file_path = db.Column(db.String(20),default=None)
+    #submit file path 
     submit_text_file_path = db.Column(db.String(30),default=None)
+    #singal identity result path
     origin_text_file_path = db.Column(db.String(30),default=None)
-    modified_text_file_path = db.Column(db.String(30),default=None)
+    #singal identity process path
+    process_speech_file_path = db.Column(db.String(30),default=None)
+    #emotion identity result path
     origin_emotion_file_path = db.Column(db.String(30),default=None)
+    # edit text result path
+    modified_text_file_path = db.Column(db.String(30),default=None)
+    
     timestamp = db.Column(db.DateTime, default=datetime.now(pytz.timezone('Asia/Taipei')))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False,default=None)
 

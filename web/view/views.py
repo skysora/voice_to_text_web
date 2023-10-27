@@ -2,18 +2,12 @@
 from flask import Blueprint, render_template,request
 import os
 import json
-import subprocess
 from flask_login import current_user
 from web.models.models import File
 from web.database import db
-from pydub import AudioSegment
 import threading
-from azure.storage.blob import BlobServiceClient,BlobServiceClient,generate_container_sas,BlobSasPermissions
-from hume import HumeBatchClient
-from datetime import datetime, timedelta
-from hume.models.config import BurstConfig,LanguageConfig,ProsodyConfig
 from web.models.models import User,UserRoleEnum
-
+import web.view.utils as utils
 
 view_blueprint = Blueprint('view', __name__, template_folder='templates/view')
 UPLOAD_FOLDER = '/web/data/signal/'
@@ -31,13 +25,15 @@ def azure():
     
     page_limit = 10
     all_users=None
+    
     user = User.query.filter_by(id=current_user.id).first()
+    
+    #判斷權限
     if (user.permissions == UserRoleEnum.ADMIN):
         all_users =  User.query.all()
     
     if request.method == 'POST':
-        select_user_id = request.json['select_user_id']
-        
+        select_user_id = request.json['select_user_id']     
     else:
         select_user_id = current_user.id
         
@@ -45,6 +41,7 @@ def azure():
     user_files = File.query.filter_by(user_id=select_user_id).order_by(File.timestamp.desc()).all()
     file_list=[file.title for file in user_files]
     
+    # 決定顯示檔案開始和結束位置
     start=0
     end = min(len(user_files),page_limit)
     page_number = 1
@@ -59,74 +56,70 @@ def azure():
     for file in user_files[start:end]:
         
         file_name = f'{file.title}'
-        data[file_name] = {'result':{'speech':False,"submit":False,'emotion':False,'edit':False,'text':False},'datetime':'','User':f'{User.query.filter_by(id=file.user_id).first().username}'}
+        # speech 代表 是否辨識完成
+        # submit 代表 是否上傳辨識
+        # emotion 代表 情緒辨識是否完成
+        # edit 代表 辨識完的結果是否切割完成
+        # text 代表 是否檢查過
+        
+        data[file_name] = {'result':{'submit':False,"speech":False,"process_speech":False,'text':False,'emotion':False},'datetime':'',
+                           'User':f'{User.query.filter_by(id=file.user_id).first().username}'}
         data[file_name]['datetime'] = f'{file.timestamp}'
+        
+        
         # 檢查這個檔案的答案是不是已經在資料夾內
-        check_exitst_answer(file)
-        
-
-        if (os.path.exists(f'{file.submit_text_file_path}')):
-            data[file_name]['result']["submit"] = True
-
-
-        if (not os.path.exists(f'{file.origin_text_file_path}')) and (os.path.exists(f'{file.submit_text_file_path}')):
-            check_speech(file_name)
-            
+        file_name = f'{file.title}'
+        #singal
+        file.singal_file_path = f"{UPLOAD_FOLDER}{file_name}"
+        #submit
+        file.submit_text_file_path = f"{SUMIT_FOLDER}{file_name}.json"
+        #speech
+        file.origin_text_file_path = f"{SPEECH_RESULT_FOLDER}{file_name}.json"
         #process_speech_result
-        if os.path.exists(f'{file.origin_text_file_path}') and os.path.exists(f'{file.submit_text_file_path}'):
-            data[file_name]['result']['speech'] = True
-            file.modified_text_file_path = f'{PROCESS_SPEECH_RESULT_FOLDER}{file_name}'
-            db.session.commit()
-            if not os.path.exists(f'{file.modified_text_file_path}'):
-                os.makedirs(f'{file.modified_text_file_path}/audio/')
-                os.makedirs(f'{file.modified_text_file_path}/text/')
-
-            audio_path = f'{file.modified_text_file_path}/audio/'
-            text_path = f'{file.modified_text_file_path}/text/'
-            if (len(os.listdir(audio_path)) != len(os.listdir(text_path)) or len(os.listdir(audio_path)) == 0 ):
-                task_thread = threading.Thread(target=generate_process_speech_result,args=((file.title,file.origin_text_file_path,file.file_path,f'{PROCESS_SPEECH_RESULT_FOLDER}{file_name}')))
-                task_thread.start()
-           
-        audio_path = f'{file.modified_text_file_path}/audio/'
-        text_path = f'{file.modified_text_file_path}/text/'
-        # 產生情緒辨識檔案
-        if (file.modified_text_file_path != None) and (len(os.listdir(audio_path)) == len(os.listdir(text_path))):
-            if os.path.exists(file.modified_text_file_path) and (file.origin_emotion_file_path == None or not os.path.exists(file.origin_emotion_file_path) or len(os.listdir(file.origin_emotion_file_path))!=len(os.listdir(text_path))):
-                file.origin_emotion_file_path = f'{EMOTION_RESULT_FOLDER}{file.title}'
-                db.session.commit()
-                # emotion_identify(file)
-                task_thread = threading.Thread(target=emotion_identify,args=((file.title,file.modified_text_file_path)))
-                task_thread.start()
-
-        #情緒辨識結果
-        if(file.origin_emotion_file_path != None):
-            try:
-                if(len(os.listdir(file.origin_emotion_file_path)) == len(os.listdir(text_path))):
-                    data[file_name]['result']['emotion'] = True
-            except:
-                pass
-            
-        try:
-            if(len(os.listdir(audio_path)) == len(os.listdir(text_path)) and (int(select_user_id)==int(current_user.id))):
-                data[file_name]['result']['edit'] = True
-        except:
-            pass
+        file.process_speech_file_path = f"{PROCESS_SPEECH_RESULT_FOLDER}{file_name}"
+        #text
+        file.modified_text_file_path = f"{TEXT_OUTPUT}{file_name}.txt"
+        #emotion
+        file.origin_emotion_file_path = f'{EMOTION_RESULT_FOLDER}{file_name}'
+        db.session.commit()
+        # file = utils.check_exitst_path(file)
         
-        try:
-            if(os.path.exists(f'{SPEECH_RESULT_FOLDER}{file_name}.txt') and ((len(os.listdir(audio_path)) == len(os.listdir(text_path))))):
-                data[file_name]['result']['speech'] = True
-        except:
-            pass
-        # 編輯
-        if(os.path.exists(f'{TEXT_OUTPUT}{file_name}.txt')):
-            data[file_name]['result']['text'] = True
+        
+        
+        # 檢查這個檔案的答案
+        data = utils.check_exitst_answer(file,data)
+
+        #如果上傳了還沒有結果，檢查完成了沒
+        if (data[file_name]['result']['submit'] and not data[file_name]['result']['speech']):
+            utils.check_submit_speech(file_name)
+        
+        #如果有結果，但還有做前處理，做前處理
+        if (data[file_name]['result']['speech'] and not data[file_name]['result']['process_speech']):
+            task_thread = threading.Thread(target=utils.generate_process_speech_result,
+                                        args=((file.origin_text_file_path, #singal identity result path
+                                               file.singal_file_path,      #origin singal path
+                                               file.process_speech_file_path #singal identity process path
+                                                )))
+            task_thread.start()
+        
+        
+        # 如果做過做前處理，可以產生情緒辨識檔案
+        if (data[file_name]['result']['process_speech']):
+            task_thread = threading.Thread(target=utils.emotion_identify,args=((file.title,file.process_speech_file_path)))
+            task_thread.start()
+
+        
+        # 檢查這個檔案的答案
+        data = utils.check_exitst_answer(file,data)
+        
             
         #判斷狀態
-        if(data[file_name]['result']['emotion'] and data[file_name]['result']['speech'] and data[file_name]['result']['text']):
+        if(data[file_name]['result']['speech'] and data[file_name]['result']['text'] and data[file_name]['result']['emotion']):
             data[file_name]['status'] = "Finish"  
-        elif(not data[file_name]['result']["submit"] and not data[file_name]['result']['emotion'] and not data[file_name]['result']['speech'] and not data[file_name]['result']['text']):
-            data[file_name]['status'] = "NotYet"        
-        
+            
+        elif(not data[file_name]['result']["submit"] and not data[file_name]['result']['speech'] and not data[file_name]['result']['text'] and not data[file_name]['result']['emotion']):
+            data[file_name]['status'] = "NotYet" 
+            
         elif(not data[file_name]['result']["submit"]):
             data[file_name]['status'] = "Speech Waiting"
         elif(not data[file_name]['result']['text']):
@@ -187,152 +180,6 @@ def manage():
         return render_template('view/manage.html',user_list=None)
 
 
-def check_speech(file_name):
-    f = open(f'{SUMIT_FOLDER}{file_name}.json')
-    data = json.load(f)
-    f.close()
-    id = data['links']['files'].split('/')[-2]
     
-    command  = f'/root/.dotnet/tools/spx batch transcription list --api-version v3.1 --files --transcription {id}'
-    result = subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    
-    # 检查是否有错误输出
-    if result.returncode == 0:
-        # sucuss
-        result_str = "\n".join(result.stdout.split('\n')[14:])
-        out = json.loads(result_str)
-        
-        try:
-            answer_path = out['values'][0]['links']['contentUrl']
-            answer = subprocess.run(f'wget -O "{SPEECH_RESULT_FOLDER}{file_name}.json" "{answer_path}"', shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            file = File.query.filter_by(title=file_name).first()
-            file.submit_text_file_path = f'{SPEECH_RESULT_FOLDER}{file_name}.json'
-            db.session.commit()
-        except:
-            pass
-    else:
-        # error
-        print(result.stderr)
-        
-def generate_process_speech_result(filename,text_path,audio_file_path,modified_text_file_path):
-    
-        
-    with open(text_path) as file_text:
-        text_data = json.load(file_text)
-        
-    audio = AudioSegment.from_file(audio_file_path, format="mp3")
-    count = 0
-    for phrases in text_data['recognizedPhrases']:
-        if(phrases['channel']!=0):
-            continue
-        start_time = float(phrases['offsetInTicks'])/10000
-        end_time  = start_time + float(phrases['durationInTicks'])/10000
-        # 切出特定时间段的音频
-        segment = audio[start_time:end_time]
-        segment.export(f"{modified_text_file_path}/audio/{count}.mp3", format="mp3")
-        with open(f"{modified_text_file_path}/text/{count}.txt",'w') as text:
-            text.write(phrases['nBest'][0]['display'])
-            
-        count +=1
 
-        
-def check_exitst_answer(file):
-    
-    file_name = f'{file.title}'
-    
-    if os.path.exists(f'{SUMIT_FOLDER}{file_name}.json'):
-        file.submit_text_file_path = f"{SUMIT_FOLDER}{file_name}.json"
-        
-    if os.path.exists(f'{SPEECH_RESULT_FOLDER}{file_name}.json'):
-        file.origin_text_file_path = f"{SPEECH_RESULT_FOLDER}{file_name}.json"
-    
-    if os.path.exists(f'{EMOTION_RESULT_FOLDER}{file_name}'): 
-        file.origin_emotion_file_path = f'{EMOTION_RESULT_FOLDER}{file_name}'
-        
-    db.session.commit()
-    
-def upload_folder_contents(blob_service_client, container_name, folder_path,folder_name):
-    # List all files in the folder and its subfolders
-    for root, _, files in os.walk(folder_path):
-        for file_name in files:
-            # Create the BlobClient for each file
-            blob_client = blob_service_client.get_blob_client(container=container_name, blob=f"{folder_name}/{file_name}")
-
-            # Check if the blob (file) already exists in the container
-            if not blob_client.exists():
-                try:
-                    # Upload the file
-                    with open(os.path.join(root, file_name), mode="rb") as data:
-                        blob_client.upload_blob(data)
-                except Exception as error:
-                    pass
-            
-def emotion_identify_one(client,folder_name,file_name,urls):
-    
-    if not os.path.exists(f'{EMOTION_RESULT_FOLDER}{folder_name}/{file_name}/'):
-        # 如果不存在，建立檔案夾
-        os.makedirs(f'{EMOTION_RESULT_FOLDER}{folder_name}/{file_name}/')
-    
-    if not os.path.exists(f'{EMOTION_RESULT_FOLDER}{folder_name}/{file_name}/burst.json'):
-        job = client.submit_job(urls, [BurstConfig()])
-        job.await_complete()
-        job.download_predictions(f'{EMOTION_RESULT_FOLDER}{folder_name}/{file_name}/burst.json')
-        ConvertUTF8(f'{EMOTION_RESULT_FOLDER}{folder_name}/{file_name}/burst.json')
-
-    if not os.path.exists(f'{EMOTION_RESULT_FOLDER}{folder_name}/{file_name}/prosody.json'):
-        job = client.submit_job(urls, [ProsodyConfig()])
-        job.await_complete()
-        job.download_predictions(f'{EMOTION_RESULT_FOLDER}{folder_name}/{file_name}/prosody.json')
-        ConvertUTF8(f'{EMOTION_RESULT_FOLDER}{folder_name}/{file_name}/prosody.json')
-
-    if not os.path.exists(f'{EMOTION_RESULT_FOLDER}{folder_name}/{file_name}/language.json'):
-        job = client.submit_job(urls, [LanguageConfig()])
-        job.await_complete()
-        job.download_predictions(f'{EMOTION_RESULT_FOLDER}{folder_name}/{file_name}/language.json')
-        ConvertUTF8(f'{EMOTION_RESULT_FOLDER}{folder_name}/{file_name}/language.json')
-    
-def emotion_identify(file_title,modified_text_file_path):
-    
-    
-    with open(f'{TOKEN_PATH}', 'r') as test:
-        data = json.load(test)
-        
-    # Usage example
-    blob_service_client = BlobServiceClient.from_connection_string(data['blob_service_client_string'])
-    container_name = 'ntustvoice'
-    folder_to_upload = f"{modified_text_file_path}/audio"
-    upload_folder_contents(blob_service_client, container_name, folder_to_upload,file_title)
-    
-        
-    # 导入存储连接字符串和容器名称
-    blob_storage_key = data['blob_storage_key']
-    container_name = "ntustvoice"
-    blob_name = "ntuststorage2"  # 文件名称
-
-    # 设置 SAS 的权限
-    permissions = BlobSasPermissions(read=True)  # 可以根据需要调整权限
-
-    # # 生成 Blob 的 SAS
-    sas_token = generate_container_sas(
-            account_name=blob_name,
-            container_name=container_name,
-            account_key=blob_storage_key,
-            permission=permissions,
-            expiry=  datetime.now()+ timedelta(days=1)
-    )
-    client = HumeBatchClient(data['humeKey'])
-    for _, _, files in os.walk(folder_to_upload):
-        for file_name in files:
-            # Create the BlobClient for each file
-            urls = [f"https://{blob_name}.blob.core.windows.net/{container_name}/{file_title}/{file_name}?{sas_token}"]
-            emotion_identify_one(client,file_title,file_name,urls)
-
-def ConvertUTF8(path):
-    # Opening JSON file
-    with open(path, 'r') as openfile:
-        # Reading from json file
-        json_object = json.load(openfile)
-        
-    with open(path, "w") as outfile:
-        json.dump(json_object, outfile,ensure_ascii=False) 
     
