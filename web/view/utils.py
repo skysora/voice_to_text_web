@@ -34,11 +34,10 @@ def check_exitst_path(file):
     #speech
     if os.path.exists(f"{SPEECH_RESULT_FOLDER}{file_name}.json"):
         file.origin_text_file_path = f"{SPEECH_RESULT_FOLDER}{file_name}.json"
-
+        
     #process_speech_result
     if os.path.exists(f"{PROCESS_SPEECH_RESULT_FOLDER}{file_name}"):
         file.process_speech_file_path = f"{PROCESS_SPEECH_RESULT_FOLDER}{file_name}"
-
     #text
     if os.path.exists(f"{TEXT_OUTPUT}{file_name}.txt"):
         file.modified_text_file_path = f"{TEXT_OUTPUT}{file_name}.txt"
@@ -57,26 +56,26 @@ def check_exitst_answer(file,data):
     # {'result':{'submit':False,"speech":False,"process_speech":False','text':False,emotion':False},'datetime':''}
     
     #submit
-    if (os.path.exists(f'{file.submit_text_file_path}')):
+    if (os.path.exists(f"{SUMIT_FOLDER}{file_name}.json")):
         data[file_name]['result']["submit"] = True
         
     #speech
-    if (os.path.exists(f'{file.origin_text_file_path}')):
+    if (os.path.exists(f"{SPEECH_RESULT_FOLDER}{file_name}.json")):
         data[file_name]['result']["speech"] = True
         
     #process_speech        
-    audio_path = f'{file.process_speech_file_path}/audio/'
-    text_path = f'{file.process_speech_file_path}/text/'
+    audio_path = f'{PROCESS_SPEECH_RESULT_FOLDER}{file_name}/audio/'
+    text_path = f'{PROCESS_SPEECH_RESULT_FOLDER}{file_name}/text/'
     if(os.path.exists(audio_path)):
         if (len(os.listdir(audio_path)) == len(os.listdir(text_path)) and os.listdir(text_path)!=0):
             data[file_name]['result']["process_speech"] = True
         
     #text
-    if (os.path.exists(f'{file.modified_text_file_path}')):
+    if (os.path.exists(f'{TEXT_OUTPUT}{file_name}.txt')):
         data[file_name]['result']["text"] = True
         
     #emotion
-    if (os.path.exists(f'{file.origin_emotion_file_path}')):
+    if (os.path.exists(f'{EMOTION_RESULT_FOLDER}{file_name}')):
         data[file_name]['result']["emotion"] = True
         
     return data

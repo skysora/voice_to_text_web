@@ -205,8 +205,8 @@ def emotion_idenitfy_download():
 @identity_blueprint.route('/text_file_generate', methods=['get'])
 def text_file_generate():
     file_name = request.args.get('name')
-        
-    file = File.query.filter_by(title=file_name, user_id=current_user.id).first()
+    select_user_id = request.args.get('select_user_id') 
+    file = File.query.filter_by(title=file_name, user_id=select_user_id).first()
     
     
     text_path = f"{file.process_speech_file_path}/text"
@@ -232,20 +232,25 @@ def text_file_generate():
                 output_file.write("\n")  # 在每个文件的内容之间添加换行符
         
         
-    return redirect(url_for('identify.edit', name=file_name))
+    return redirect(url_for('identify.edit', name=file_name,select_user_id=select_user_id))
 
 
 @identity_blueprint.route('/edit', methods=['get'])
 def edit():
     
     file_name = request.args.get('name')
-    file = File.query.filter_by(title=file_name, user_id=current_user.id).first()
+    select_user_id = request.args.get('select_user_id') 
+        
+    file = File.query.filter_by(title=file_name, user_id=select_user_id).first()
+    user_files = File.query.filter_by(user_id=select_user_id).filter(File.process_speech_file_path.isnot(None)).order_by(File.timestamp.desc()).all()
     
-    user_files = File.query.filter_by(user_id=current_user.id).filter(File.process_speech_file_path.isnot(None)).order_by(File.timestamp.desc()).all()
-    
-    
-    file_list=[file.title for file in user_files]
+    file_list=[]
+    for file_temp in user_files:
+        if(file_temp.process_speech_file_path != None):
+            file_list.append(file_temp.title)
+        
     now_index = file_list.index(file_name)
+    
     
     # 前一頁
     if(now_index-1<0):
@@ -283,7 +288,7 @@ def edit():
         data[f'{i}'] = {"text":converter.convert(text_data),"audio":f"{audio}"}
         
 
-    return render_template('view/info.html',data=data,file_list=file_list,message="success",file_info=file_info)
+    return render_template('view/info.html',data=data,file_list=file_list,message="success",file_info=file_info,select_user_id=select_user_id)
           
 @identity_blueprint.route('/edit_file', methods=['POST'])
 def edit_file():
@@ -291,7 +296,10 @@ def edit_file():
     file_name = data.get('file_name')
     editedText = data.get('editedText')
     pharses = data.get('pharses')
-    file = File.query.filter_by(title=file_name, user_id=current_user.id).first()
+    select_user_id = data.get('select_user_id') 
+    
+    
+    file = File.query.filter_by(title=file_name, user_id=select_user_id).first()
 
     text_path = f'{file.process_speech_file_path}/text/{pharses}.txt'
     
@@ -299,7 +307,7 @@ def edit_file():
         file.write(editedText)
     
           
-    return redirect(url_for('identify.edit', name=file_name))
+    return redirect(url_for('identify.edit', name=file_name,select_user_id=select_user_id))
 
 
 @identity_blueprint.route('/data/<path:filename>')

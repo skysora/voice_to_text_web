@@ -152,7 +152,7 @@
                               IDENTIFY
                             </a>
                             {% endif %}
-                            <a href="{{ url_for('identify.download_file') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="下載音訊">
+                            <a href="{{ url_for('identify.download_file', name=file, select_user_id=select_user_id) }}" class="text-secondary font-weight-bold text-xs" data-toggle="下載音訊">
                               DOWNLOAD
                             </a>
                             <a href="javascript:void(0);" class="text-secondary font-weight-bold text-xs" onclick="confirmDelete('{{ url_for('identify.delete_file') }}?name={{ file }}')" data-toggle="刪除" >
@@ -162,12 +162,12 @@
                           <!-- result -->
                           <td class="align-middle text-center text-sm">
                             {% if data[file]['result']['process_speech'] %}
-                            <a href="{{ url_for('identify.speech_idenitfy_download') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
-                              TRANSLATION
+                            <a href="{{ url_for('identify.speech_idenitfy_download', name=file, select_user_id=select_user_id) }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
+                              TRANSLATION 
                             </a>
                             {% endif %}
                             {% if data[file]['result']['emotion'] %}
-                            <a href="{{ url_for('identify.emotion_idenitfy_download') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
+                            <a href="{{ url_for('identify.emotion_idenitfy_download', name=file, select_user_id=select_user_id) }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
                               EMOTATION
                             </a>
                             {% endif %}
@@ -175,7 +175,7 @@
                           <!-- edit -->
                           <td class="align-middle text-center text-sm">
                             {% if data[file]['result']['process_speech'] %} 
-                              <a href="{{ url_for('identify.edit') }}?name={{ file }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
+                              <a href="{{ url_for('identify.edit', name=file, select_user_id=select_user_id) }}" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Edit user">
                                 EDIT
                               </a>
                             {% endif %}

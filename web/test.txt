@@ -1,1 +1,10 @@
-123
+/web/data/process_speechResult/五柳先生傳全文統整(一).wav
+/web/data/process_speechResult/五柳先生傳全文統整(二).wav
+/web/data/process_speechResult/五柳先生傳段落梳理與統整 (一).wav
+/web/data/process_speechResult/_五柳先生傳段落梳理與統整 (二).wav
+/web/data/process_speechResult/_五柳先生傳段落梳理與統整 (三).wav
+/web/data/process_speechResult/兒時記趣 - 段落梳理與統整(二).wav
+/web/data/process_speechResult/兒時記趣 - 段落梳理與統整(一).wav
+/web/data/process_speechResult/兒時記趣 - 段落梳理與統整(三).wav
+/web/data/process_speechResult/兒時記趣 - 全文統整.wav
+/web/data/process_speechResult/_兒時記趣 - 段落梳理與統整(四).wav

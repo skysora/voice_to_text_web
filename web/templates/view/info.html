@@ -88,10 +88,10 @@
                   <td></td>
                   <td class="text-align: center; vertical-align: middle;">
                     <div class="d-flex justify-content-end align-items-center">
-                        <a href="{{ url_for('identify.edit', name=file_info.previous_file) }}" id="prevButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
+                        <a href="{{ url_for('identify.edit', name=file_info.previous_file, select_user_id=select_user_id) }}" id="prevButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
                             <i class="material-icons text-lg">chevron_left</i>
                         </a>
-                        <a href="{{ url_for('identify.edit', name=file_info.next_file) }}" id="nextButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
+                        <a href="{{ url_for('identify.edit', name=file_info.next_file, select_user_id=select_user_id) }}" id="nextButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
                             <i class="material-icons text-lg">chevron_right</i>
                         </a>
                     </div>
@@ -130,16 +130,16 @@
                           <td></td>
                           <td class="text-align: center; vertical-align: middle;">
                             <div class="d-flex justify-content-end align-items-center">
-                                <a href="{{ url_for('identify.edit', name=file_info.previous_file) }}" id="prevButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
-                                    <i class="material-icons text-lg">chevron_left</i>
-                                </a>
-                                <a href="{{ url_for('identify.edit', name=file_info.next_file) }}" id="nextButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
-                                    <i class="material-icons text-lg">chevron_right</i>
-                                </a>
+                              <a href="{{ url_for('identify.edit', name=file_info.previous_file, select_user_id=select_user_id) }}" id="prevButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
+                                  <i class="material-icons text-lg">chevron_left</i>
+                              </a>
+                              <a href="{{ url_for('identify.edit', name=file_info.next_file, select_user_id=select_user_id) }}" id="nextButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
+                                  <i class="material-icons text-lg">chevron_right</i>
+                              </a>
                             </div>
                           </td>
                           <td>
-                            <a class="submit-button" href="{{ url_for('identify.text_file_generate', name=file_info.file_name) }}">儲存</a>
+                            <a class="submit-button" href="{{ url_for('identify.text_file_generate', name=file_info.file_name, select_user_id=select_user_id) }}">儲存</a>
                           </td>
                         </tr>
                       </tbody>
@@ -182,7 +182,8 @@
       var dataToSend = {
         file_name: '{{ file_info.file_name }}' , // 假设您希望将文件名传递给后端
         pharses:pharses,
-        editedText: editedText
+        editedText: editedText,
+        select_user_id: '{{ select_user_id }}'
       };
       console.log(dataToSend)
       $.ajax({
