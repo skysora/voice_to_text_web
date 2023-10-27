@@ -68,21 +68,7 @@ def azure():
         
         
         # 檢查這個檔案的答案是不是已經在資料夾內
-        file_name = f'{file.title}'
-        #singal
-        file.singal_file_path = f"{UPLOAD_FOLDER}{file_name}"
-        #submit
-        file.submit_text_file_path = f"{SUMIT_FOLDER}{file_name}.json"
-        #speech
-        file.origin_text_file_path = f"{SPEECH_RESULT_FOLDER}{file_name}.json"
-        #process_speech_result
-        file.process_speech_file_path = f"{PROCESS_SPEECH_RESULT_FOLDER}{file_name}"
-        #text
-        file.modified_text_file_path = f"{TEXT_OUTPUT}{file_name}.txt"
-        #emotion
-        file.origin_emotion_file_path = f'{EMOTION_RESULT_FOLDER}{file_name}'
-        db.session.commit()
-        # file = utils.check_exitst_path(file)
+        file = utils.check_exitst_path(file)
         
         
         
@@ -119,6 +105,9 @@ def azure():
             
         elif(not data[file_name]['result']["submit"] and not data[file_name]['result']['speech'] and not data[file_name]['result']['text'] and not data[file_name]['result']['emotion']):
             data[file_name]['status'] = "NotYet" 
+            
+        elif(data[file_name]['result']['speech'] and not data[file_name]['result']['process_speech']):
+            data[file_name]['status'] = "Process Speech Waiting"
             
         elif(not data[file_name]['result']["submit"]):
             data[file_name]['status'] = "Speech Waiting"

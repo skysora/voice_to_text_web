@@ -10,6 +10,7 @@ from web.database import db
 from web.models.models import File,User
 from flask_login import current_user, login_required
 from opencc import OpenCC
+from sqlalchemy import not_
 
 identity_blueprint = Blueprint('identify', __name__, template_folder='templates')
 UPLOAD_FOLDER = '/web/data/signal/'
@@ -28,6 +29,9 @@ def upload_file():
     for file in files:
         # 本地端測試
         filename = file.filename
+        db_files = File.query.filter_by(title=filename,user_id=current_user.id).all()
+        if len(db_files)>0:
+            filename  = f'{filename}'.replace('.',f'_{len(db_files)+1}.')
         file.save(os.path.join(UPLOAD_FOLDER, filename))
         # Create a new File object and associate it with the current user
         new_file = File(
@@ -42,25 +46,24 @@ def upload_file():
 @identity_blueprint.route('/download_file', methods=['get'])
 def download_file():
     file_name = request.args.get('name')
-    file = File.query.filter(File.title.like(file_name)).first()
+    file = File.query.filter_by(title=file_name, user_id=current_user.id).first()
     return send_file(f'{file.singal_file_path}',as_attachment=True)
 
 
 @identity_blueprint.route('/delete_file', methods=['get'])
 def delete_file():
     file_name = request.args.get('name')
-    file = File.query.filter_by(title=file_name, user_id=current_user.id).first()
-     
-    other_file = File.query.filter_by(title=file_name).all()
-    
-    with open('./web/test.txt','w') as test:
-        test.write(f'{len(other_file)}')
+    files = File.query.filter_by(title=file_name, user_id=current_user.id).all()
+    other_files = File.query.filter_by(title=file_name).filter(not_(File.user_id == current_user.id)).all()
     
     # 如果没有其他用户与文件关联，则删除文件
-    if len(other_file)==1:
+    if len(other_files)==0:
         #singal
-        if os.path.exists(file.singal_file_path):
-            os.remove(file.singal_file_path)
+        try:
+            if os.path.exists(file.singal_file_path):
+                os.remove(file.singal_file_path)
+        except:
+            pass
         #speech
         try:
             if os.path.exists(file.submit_text_file_path):
@@ -91,26 +94,28 @@ def delete_file():
         except:
             pass
     
-    db.session.delete(file)
-    db.session.commit()
+    for file in files:   
+        db.session.delete(file)
+        db.session.commit()
     return redirect(url_for('view.azure'))
 
 
 @identity_blueprint.route('/insert_file_idenitfy', methods=['get'])
 def insert_file_idenitfy():
     file_name = request.args.get('name')
+    file = File.query.filter_by(title=file_name, user_id=current_user.id).first()
     
     with open(f'{TOKEN_PATH}', 'r') as file:
         data = json.load(file)
         
     command  = f'/root/.dotnet/tools/spx config @key --set {data["voiceKey"]}'
-    result = subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     command  = f'/root/.dotnet/tools/spx config @region --set {data["voiceLocation"]}'
-    result = subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
     # upload file to cloud
     blob_service_client = BlobServiceClient.from_connection_string(data['blob_service_client_string'])
-    upload_file_path = os.path.join(UPLOAD_FOLDER, file_name)
+    upload_file_path = file.singal_file_path
     blob_client = blob_service_client.get_blob_client(container='ntustvoice', blob=file_name)
     # Upload the created file
     try:
@@ -144,10 +149,7 @@ def speech_idenitfy(file_name):
         out = json.loads(result_str)
         with open(f'{SUMIT_FOLDER}{out["displayName"]}.json', "w") as json_file:
             json.dump(out, json_file)
-        
-        file = File.query.filter_by(title=file_name).first()
-        file.submit_text_file_path = f'{SUMIT_FOLDER}{out["displayName"]}.json'
-        db.session.commit()
+            
     else:
         # 命令执行失败，输出错误信息
         print("命令执行失败：")
@@ -158,10 +160,10 @@ def speech_idenitfy_download():
     
     file_name = request.args.get('name')
         
-    file = File.query.filter_by(title=file_name).first()
+    file = File.query.filter_by(title=file_name, user_id=current_user.id).first()
     
     
-    text_path = f"{file.modified_text_file_path}/text"
+    text_path = f"{file.process_speech_file_path}/text"
     
     if (not os.path.exists(f"{text_path}")):
         return redirect(url_for('azure'))
@@ -189,6 +191,7 @@ def speech_idenitfy_download():
 @identity_blueprint.route('/emotion_idenitfy_download', methods=['get'])
 def emotion_idenitfy_download():
     file_name = request.args.get('name')
+    file = File.query.filter_by(title=file_name, user_id=current_user.id).first()
     emotion_result_list=os.listdir(EMOTION_RESULT_FOLDER)
     if(f'{file_name}' not in emotion_result_list):
         return redirect(url_for('azure'))
@@ -203,14 +206,12 @@ def emotion_idenitfy_download():
 def text_file_generate():
     file_name = request.args.get('name')
         
-    file = File.query.filter_by(title=file_name).first()
+    file = File.query.filter_by(title=file_name, user_id=current_user.id).first()
     
     
-    text_path = f"{PROCESS_SPEECH_RESULT_FOLDER}{file_name}/text"
+    text_path = f"{file.process_speech_file_path}/text"
     
 
-    with open('./web/test.txt','w') as test:
-        test.write(text_path)
     if (not os.path.exists(f"{text_path}")):
         return redirect(url_for('view.azure'))
     
@@ -238,9 +239,11 @@ def text_file_generate():
 def edit():
     
     file_name = request.args.get('name')
-    file = File.query.filter_by(title=file_name).first()
+    file = File.query.filter_by(title=file_name, user_id=current_user.id).first()
     
-    user_files = File.query.filter_by(user_id=current_user.id).filter(File.origin_text_file_path.isnot(None)).order_by(File.timestamp.desc()).all() 
+    user_files = File.query.filter_by(user_id=current_user.id).filter(File.process_speech_file_path.isnot(None)).order_by(File.timestamp.desc()).all()
+    
+    
     file_list=[file.title for file in user_files]
     now_index = file_list.index(file_name)
     
@@ -256,19 +259,15 @@ def edit():
     else:
         next_file_title = file_list[now_index+1]
     
-    
-    with open('./web/test.txt','w') as test:
-        test.write(f"{file.title},{file.singal_file_path}")
         
     audio_path = file.singal_file_path.replace('/web/data','')
     file_info = {"file_name":file_name,'previous_file':previous_file_title,'next_file':next_file_title,'audio':audio_path}
     
 
     converter = OpenCC('s2twp')
-    audio_path = f'{PROCESS_SPEECH_RESULT_FOLDER}{file_name}/audio/'
-    text_path = f'{PROCESS_SPEECH_RESULT_FOLDER}{file_name}/text/'
-        
-        
+    audio_path = f'{file.process_speech_file_path}/audio/'
+    text_path = f'{file.process_speech_file_path}/text/'
+            
     file_list=[]
     data={}
     for i in range(len(os.listdir(audio_path))):
@@ -280,24 +279,21 @@ def edit():
                 text_data = ""
         
         
-        audio = f"{audio_path}{i}.mp3".replace(f'{PROCESS_SPEECH_RESULT_FOLDER}','process_speechResult/')
+        audio = f"{audio_path}{i}.mp3".replace(f'/web/data/','')
         data[f'{i}'] = {"text":converter.convert(text_data),"audio":f"{audio}"}
         
 
     return render_template('view/info.html',data=data,file_list=file_list,message="success",file_info=file_info)
-   
-
-       
+          
 @identity_blueprint.route('/edit_file', methods=['POST'])
 def edit_file():
     data = request.json  # 解析JSON数据
     file_name = data.get('file_name')
     editedText = data.get('editedText')
     pharses = data.get('pharses')
-    
-    file = File.query.filter_by(title=file_name).first()
+    file = File.query.filter_by(title=file_name, user_id=current_user.id).first()
 
-    text_path = f'{PROCESS_SPEECH_RESULT_FOLDER}{file_name}/text/{pharses}.txt'
+    text_path = f'{file.process_speech_file_path}/text/{pharses}.txt'
     
     with open(text_path, 'w', encoding='utf-8') as file:
         file.write(editedText)
@@ -308,7 +304,6 @@ def edit_file():
 
 @identity_blueprint.route('/data/<path:filename>')
 def data_directory(filename):
-    
-    
+     
     return send_from_directory(f'/web/data/',filename)
     

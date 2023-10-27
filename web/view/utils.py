@@ -25,17 +25,28 @@ def check_exitst_path(file):
     
     file_name = f'{file.title}'
     #singal
-    file.singal_file_path = f"{UPLOAD_FOLDER}{file_name}"
+    if os.path.exists(f"{UPLOAD_FOLDER}{file_name}"):
+        file.singal_file_path = f"{UPLOAD_FOLDER}{file_name}"
     #submit
-    file.submit_text_file_path = f"{SUMIT_FOLDER}{file_name}.json"
+    if os.path.exists(f"{SUMIT_FOLDER}{file_name}.json"):
+        file.submit_text_file_path = f"{SUMIT_FOLDER}{file_name}.json"
+
     #speech
-    file.origin_text_file_path = f"{SPEECH_RESULT_FOLDER}{file_name}.json"
+    if os.path.exists(f"{SPEECH_RESULT_FOLDER}{file_name}.json"):
+        file.origin_text_file_path = f"{SPEECH_RESULT_FOLDER}{file_name}.json"
+
     #process_speech_result
-    file.process_speech_file_path = f"{PROCESS_SPEECH_RESULT_FOLDER}{file_name}.json"
+    if os.path.exists(f"{PROCESS_SPEECH_RESULT_FOLDER}{file_name}"):
+        file.process_speech_file_path = f"{PROCESS_SPEECH_RESULT_FOLDER}{file_name}"
+
     #text
-    file.modified_text_file_path = f"{TEXT_OUTPUT}{file_name}.txt"
+    if os.path.exists(f"{TEXT_OUTPUT}{file_name}.txt"):
+        file.modified_text_file_path = f"{TEXT_OUTPUT}{file_name}.txt"
+
     #emotion
-    file.origin_emotion_file_path = f'{EMOTION_RESULT_FOLDER}{file_name}'
+    if os.path.exists(f'{EMOTION_RESULT_FOLDER}{file_name}'):
+        file.origin_emotion_file_path = f'{EMOTION_RESULT_FOLDER}{file_name}'
+        
     db.session.commit()
     
     return file
@@ -53,11 +64,11 @@ def check_exitst_answer(file,data):
     if (os.path.exists(f'{file.origin_text_file_path}')):
         data[file_name]['result']["speech"] = True
         
-    #process_speech
+    #process_speech        
     audio_path = f'{file.process_speech_file_path}/audio/'
     text_path = f'{file.process_speech_file_path}/text/'
     if(os.path.exists(audio_path)):
-        if (os.listdir(audio_path) == os.listdir(text_path) and os.listdir(text_path)!=0):
+        if (len(os.listdir(audio_path)) == len(os.listdir(text_path)) and os.listdir(text_path)!=0):
             data[file_name]['result']["process_speech"] = True
         
     #text

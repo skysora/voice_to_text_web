@@ -84,6 +84,19 @@
                         </audio>
                     </div>
                 </div>
+                <tr>
+                  <td></td>
+                  <td class="text-align: center; vertical-align: middle;">
+                    <div class="d-flex justify-content-end align-items-center">
+                        <a href="{{ url_for('identify.edit', name=file_info.previous_file) }}" id="prevButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
+                            <i class="material-icons text-lg">chevron_left</i>
+                        </a>
+                        <a href="{{ url_for('identify.edit', name=file_info.next_file) }}" id="nextButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
+                            <i class="material-icons text-lg">chevron_right</i>
+                        </a>
+                    </div>
+                  </td>
+                </tr>
               </div>
               <div id="datatable" class="card-body px-0 pb-2">
                 <div class="table-responsive p-0">
