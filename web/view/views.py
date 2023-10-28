@@ -80,7 +80,17 @@ def azure():
             utils.check_submit_speech(file_name)
         
         #如果有結果，但還有做前處理，做前處理
-        if (data[file_name]['result']['speech'] and not data[file_name]['result']['process_speech']):
+        with open('./web/test.txt','w') as test:
+            test.write(f"{data[file_name]['result']['speech']}\n")
+            test.write(f"{not data[file_name]['result']['process_speech']}\n")
+            test.write(f'{file.origin_text_file_path}\n')
+            test.write(f'{file.singal_file_path}\n')
+            test.write(f'{file.process_speech_file_path}\n')
+            test.write(str(not os.path.exists(f'{file.process_speech_file_path}')))
+            
+        if (data[file_name]['result']['speech'] and (not data[file_name]['result']['process_speech'])):
+            file.process_speech_file_path = f'{PROCESS_SPEECH_RESULT_FOLDER}{file_name}'
+            db.session.commit()
             task_thread = threading.Thread(target=utils.generate_process_speech_result,
                                         args=((file.origin_text_file_path, #singal identity result path
                                                file.singal_file_path,      #origin singal path

@@ -9,7 +9,7 @@ import threading
 from web.database import db 
 from web.models.models import File,User
 from flask_login import current_user, login_required
-from opencc import OpenCC
+from zhconv import convert
 from sqlalchemy import not_
 
 identity_blueprint = Blueprint('identify', __name__, template_folder='templates')
@@ -46,15 +46,17 @@ def upload_file():
 @identity_blueprint.route('/download_file', methods=['get'])
 def download_file():
     file_name = request.args.get('name')
-    file = File.query.filter_by(title=file_name, user_id=current_user.id).first()
+    select_user_id = request.args.get('select_user_id') 
+    file = File.query.filter_by(title=file_name, user_id=select_user_id).first()
     return send_file(f'{file.singal_file_path}',as_attachment=True)
 
 
 @identity_blueprint.route('/delete_file', methods=['get'])
 def delete_file():
     file_name = request.args.get('name')
-    files = File.query.filter_by(title=file_name, user_id=current_user.id).all()
-    other_files = File.query.filter_by(title=file_name).filter(not_(File.user_id == current_user.id)).all()
+    select_user_id = request.args.get('select_user_id') 
+    files = File.query.filter_by(title=file_name, user_id=select_user_id).all()
+    other_files = File.query.filter_by(title=file_name).filter(not_(File.user_id == select_user_id)).all()
     
     # 如果没有其他用户与文件关联，则删除文件
     if len(other_files)==0:
@@ -269,7 +271,6 @@ def edit():
     file_info = {"file_name":file_name,'previous_file':previous_file_title,'next_file':next_file_title,'audio':audio_path}
     
 
-    converter = OpenCC('s2twp')
     audio_path = f'{file.process_speech_file_path}/audio/'
     text_path = f'{file.process_speech_file_path}/text/'
             
@@ -285,7 +286,7 @@ def edit():
         
         
         audio = f"{audio_path}{i}.mp3".replace(f'/web/data/','')
-        data[f'{i}'] = {"text":converter.convert(text_data),"audio":f"{audio}"}
+        data[f'{i}'] = {"text":convert(text_data, 'zh-tw'),"audio":f"{audio}"}
         
 
     return render_template('view/info.html',data=data,file_list=file_list,message="success",file_info=file_info,select_user_id=select_user_id)

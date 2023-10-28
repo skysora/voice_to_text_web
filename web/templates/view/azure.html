@@ -155,7 +155,7 @@
                             <a href="{{ url_for('identify.download_file', name=file, select_user_id=select_user_id) }}" class="text-secondary font-weight-bold text-xs" data-toggle="下載音訊">
                               DOWNLOAD
                             </a>
-                            <a href="javascript:void(0);" class="text-secondary font-weight-bold text-xs" onclick="confirmDelete('{{ url_for('identify.delete_file') }}?name={{ file }}')" data-toggle="刪除" >
+                            <a href="javascript:void(0);" class="text-secondary font-weight-bold text-xs" onclick="confirmDelete('{{ url_for('identify.delete_file', name=file, select_user_id=select_user_id) }}')" data-toggle="刪除" >
                               DELETE
                             </a>
                           </td>

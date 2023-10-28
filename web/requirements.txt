@@ -9,3 +9,4 @@ azure-storage-blob
 hume
 opencc
 flask_migrate
+zhconv

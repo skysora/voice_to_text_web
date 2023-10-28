@@ -35,6 +35,6 @@ RUN dotnet tool install --global Microsoft.CognitiveServices.Speech.CLI
 ENV PATH="${PATH}:/root/.dotnet/tools"
 
 # 定義容器啟動命令
-# CMD gunicorn app:app -c ./web/gunicorn.conf.py --pythonpath ./web 
+CMD gunicorn app:app -c ./web/gunicorn.conf.py --pythonpath ./web 
 
 
