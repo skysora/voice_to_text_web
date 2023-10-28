@@ -1,6 +1,6 @@
-True
-False
-/web/data/speechResult/國小自然 增加溶解量的方法.wav.json
-/web/data/signal/國小自然 增加溶解量的方法.wav
-/web/data/process_speechResult/國小自然 增加溶解量的方法.wav
+/web/data/signal/0.mp3
+None
+None
+None
+None
 False

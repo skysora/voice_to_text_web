@@ -40,6 +40,7 @@ def upload_file():
             user_id=current_user.id  # Assuming your user model has an 'id' field
         )
         db.session.add(new_file)
+        upload_file_to_cloud(new_file)
     db.session.commit()
     return redirect(url_for('view.azure'))
       
@@ -60,55 +61,54 @@ def delete_file():
     
     # 如果没有其他用户与文件关联，则删除文件
     if len(other_files)==0:
+        
         #singal
         try:
-            if os.path.exists(file.singal_file_path):
-                os.remove(file.singal_file_path)
+            if os.path.exists(files[0].singal_file_path):
+                os.remove(files[0].singal_file_path)
         except:
             pass
         #speech
         try:
-            if os.path.exists(file.submit_text_file_path):
-                os.remove(file.submit_text_file_path)
-            if os.path.exists(file.origin_text_file_path):
-                os.remove(file.origin_text_file_path)
+            if os.path.exists(files[0].submit_text_file_path):
+                os.remove(files[0].submit_text_file_path)
+            if os.path.exists(files[0].origin_text_file_path):
+                os.remove(files[0].origin_text_file_path)
         except:
             pass
         #process
         try:
-            if os.path.exists(file.process_speech_file_path):
-                shutil.rmtree(file.process_speech_file_path)
+            if os.path.exists(files[0].process_speech_file_path):
+                shutil.rmtree(files[0].process_speech_file_path)
         except:
             pass
         #emotion
         try:
-            if os.path.exists(file.origin_emotion_file_path):
-                shutil.rmtree(file.origin_emotion_file_path)
+            if os.path.exists(files[0].origin_emotion_file_path):
+                shutil.rmtree(files[0].origin_emotion_file_path)
             #emotion zip
-            if os.path.exists(file.origin_emotion_file_path+'.zip'):
-                os.remove(file.origin_emotion_file_path+'.zip')
+            if os.path.exists(files[0].origin_emotion_file_path+'.zip'):
+                os.remove(files[0].origin_emotion_file_path+'.zip')
         except:
             pass
         #text
         try:
-            if os.path.exists(f'{file.modified_text_file_path}'):
-                os.remove(f'{file.modified_text_file_path}.txt')
+            if os.path.exists(f'{files[0].modified_text_file_path}'):
+                os.remove(f'{files[0].modified_text_file_path}')
         except:
             pass
     
     for file in files:   
         db.session.delete(file)
-        db.session.commit()
+        
+    db.session.commit()
+        
     return redirect(url_for('view.azure'))
 
-
-@identity_blueprint.route('/insert_file_idenitfy', methods=['get'])
-def insert_file_idenitfy():
-    file_name = request.args.get('name')
-    file = File.query.filter_by(title=file_name, user_id=current_user.id).first()
+def upload_file_to_cloud(file):
     
-    with open(f'{TOKEN_PATH}', 'r') as file:
-        data = json.load(file)
+    with open(f'{TOKEN_PATH}', 'r') as token_file:
+        data = json.load(token_file)
         
     command  = f'/root/.dotnet/tools/spx config @key --set {data["voiceKey"]}'
     subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -117,20 +117,29 @@ def insert_file_idenitfy():
     
     # upload file to cloud
     blob_service_client = BlobServiceClient.from_connection_string(data['blob_service_client_string'])
+        
+        
     upload_file_path = file.singal_file_path
-    blob_client = blob_service_client.get_blob_client(container='ntustvoice', blob=file_name)
+    blob_client = blob_service_client.get_blob_client(container='ntustvoice', blob=file.title)
     # Upload the created file
     try:
         with open(file=upload_file_path, mode="rb") as data:
             blob_client.upload_blob(data)
     except:
         pass
-    
+
+@identity_blueprint.route('/insert_file_idenitfy', methods=['get'])
+def insert_file_idenitfy():
+    file_name = request.args.get('name')
+    select_user_id = request.args.get('select_user_id') 
+    file = File.query.filter_by(title=file_name, user_id=select_user_id).first()
     
     # SPEECH IDENTIFY
     submit_list=os.listdir(SUMIT_FOLDER)
     if(f'{file_name}.json' not in submit_list):
         speech_idenitfy(file_name)
+        # task_thread = threading.Thread(target=speech_idenitfy,args=((file_name,)))
+        # task_thread.start()
         
     return redirect(url_for('view.azure'))
 

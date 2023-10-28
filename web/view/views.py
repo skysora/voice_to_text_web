@@ -80,14 +80,6 @@ def azure():
             utils.check_submit_speech(file_name)
         
         #如果有結果，但還有做前處理，做前處理
-        with open('./web/test.txt','w') as test:
-            test.write(f"{data[file_name]['result']['speech']}\n")
-            test.write(f"{not data[file_name]['result']['process_speech']}\n")
-            test.write(f'{file.origin_text_file_path}\n')
-            test.write(f'{file.singal_file_path}\n')
-            test.write(f'{file.process_speech_file_path}\n')
-            test.write(str(not os.path.exists(f'{file.process_speech_file_path}')))
-            
         if (data[file_name]['result']['speech'] and (not data[file_name]['result']['process_speech'])):
             file.process_speech_file_path = f'{PROCESS_SPEECH_RESULT_FOLDER}{file_name}'
             db.session.commit()
@@ -100,7 +92,7 @@ def azure():
         
         
         # 如果做過做前處理，可以產生情緒辨識檔案
-        if (data[file_name]['result']['process_speech']):
+        if (data[file_name]['result']['text']):
             task_thread = threading.Thread(target=utils.emotion_identify,args=((file.title,file.process_speech_file_path)))
             task_thread.start()
 
@@ -115,16 +107,18 @@ def azure():
             
         elif(not data[file_name]['result']["submit"] and not data[file_name]['result']['speech'] and not data[file_name]['result']['text'] and not data[file_name]['result']['emotion']):
             data[file_name]['status'] = "NotYet" 
+              
+        elif(data[file_name]['result']["submit"] and (not data[file_name]['result']['speech'])):
+            data[file_name]['status'] = "Process Speech Waiting"    
             
-        elif(data[file_name]['result']['speech'] and not data[file_name]['result']['process_speech']):
-            data[file_name]['status'] = "Process Speech Waiting"
-            
-        elif(not data[file_name]['result']["submit"]):
-            data[file_name]['status'] = "Speech Waiting"
-        elif(not data[file_name]['result']['text']):
+        elif(not data[file_name]['result']['text'] and data[file_name]['result']['process_speech']):
             data[file_name]['status'] = "Text Waiting"
-        elif(not data[file_name]['result']['emotion']):
+            
+        elif(data[file_name]['result']['speech'] and data[file_name]['result']['text'] and not data[file_name]['result']['emotion']):
             data[file_name]['status'] = "Emototion Waiting" 
+        else:
+            data[file_name]['status'] = "Waiting" 
+    
             
     return render_template('view/azure.html',data=data,file_list = file_list[(page_number-1)*page_limit:page_number*page_limit],
                            file_list_number=len(user_files),currentPage=page_number,user_list = all_users,
@@ -138,6 +132,7 @@ def manage():
     if (user.permissions == UserRoleEnum.ADMIN):
         all_users =  User.query.all()
         total_data = []
+        temp={}
         for user in all_users:
             data = {"username":"","upload":"","speech":"","emotion":"","text":"","total":""}
             data["username"]  = user.username
@@ -147,28 +142,19 @@ def manage():
             data["text"]  = 0
             data["total"]  = 0
             for file in File.query.filter_by(user_id=user.id).all():
+                file_name = file.title
+                temp[file_name] = {'result':{'submit':False,"speech":False,"process_speech":False,'text':False,'emotion':False}}
+                temp = utils.check_exitst_answer(file,temp)
                 # speech
-                try:
-                    if(os.path.exists(f'{file.origin_text_file_path}')):
-                        data["speech"]+=1
-                except:
-                    pass
+                if(os.path.exists(file.singal_file_path)):
+                    data["speech"]+=1
                 # emotion
-                try:
-                    text_path = f'{file.modified_text_file_path}/text/'
-                    if(len(os.listdir(file.origin_emotion_file_path)) == len(os.listdir(text_path))):
-                        data["emotion"]+=1 
-                except:
-                    pass
+                data["emotion"]+=temp[file_name]['result']["emotion"] 
                 # text
-                if(os.path.exists(f'{TEXT_OUTPUT}{file.title}.txt')):
-                    data["text"]+=1 
-
-                try:
-                    if((os.path.exists(f'{file.origin_text_file_path}')) and (len(os.listdir(file.origin_emotion_file_path)) == len(os.listdir(text_path))) and os.path.exists(f'{TEXT_OUTPUT}{file.title}.txt')):
-                        data["total"]  += 1
-                except:
-                    pass
+                data["text"]+=temp[file_name]['result']["text"]  
+                # total
+                if(temp[file_name]['result']["speech"] and temp[file_name]['result']["emotion"] and temp[file_name]['result']["text"]):
+                    data["total"]  += 1
             try:
                 data["total"] = int(data["total"]/data["upload"]*100)
             except:

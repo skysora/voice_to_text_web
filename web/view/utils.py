@@ -47,7 +47,7 @@ def check_exitst_path(file):
         file.origin_emotion_file_path = f'{EMOTION_RESULT_FOLDER}{file_name}'
         
     db.session.commit()
-    
+            
     return file
     
 def check_exitst_answer(file,data):
