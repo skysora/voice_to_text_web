@@ -106,6 +106,7 @@
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">段落</th>
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">內容</th>
                         <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">音訊</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">備註</th>
                         <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">動作</th>
                       </tr>
                     </thead>
@@ -114,12 +115,16 @@
                         {% for pharses in file_list %}
                         <tr>
                           <td style="vertical-align: middle;">段落: {{ pharses }}</td>
-                          <td contenteditable="true" oninput="convertNewlines(this)" style="max-width: 300px; white-space: pre-wrap; word-wrap: break-word; overflow: hidden;text-align: left;" id={{ pharses }}>{{ data[pharses]['text'] }}</td>
+                          <td contenteditable="true" oninput="convertNewlines(this)" style="max-width: 300px; white-space: pre-wrap; word-wrap: break-word; overflow: hidden;text-align: left;" id="{{ pharses }}_text">{{ data[pharses]['text'] }}
+                          </td>
                           </td>
                           <td class="text-center">
                             <audio controls>
                               <source src="{{ url_for('identify.data_directory', filename=data[pharses]['audio']) }}" type="audio/mpeg">
                             </audio>
+                          </td>
+                          <!-- remark -->
+                          <td contenteditable="true" oninput="convertNewlines(this)" style="max-width: 100px; white-space: pre-wrap; word-wrap: break-word; overflow: hidden;text-align: left;" id="{{ pharses }}_remark">{{ data[pharses]['remark'] }}
                           </td>
                           <td style="text-align: center; vertical-align: middle;">
                             <button class="submit-button" onclick="submitEditedText('{{ pharses }}')">更改</button>
@@ -178,11 +183,13 @@
   
   <script>
     function submitEditedText(pharses) {
-      var editedText = document.getElementById(pharses).textContent;
+      var editedText = document.getElementById(pharses+"_text").textContent;
+      var editedRemark = document.getElementById(pharses+"_remark").textContent;
       var dataToSend = {
         file_name: '{{ file_info.file_name }}' , // 假设您希望将文件名传递给后端
         pharses:pharses,
         editedText: editedText,
+        editedRemark: editedRemark,
         select_user_id: '{{ select_user_id }}'
       };
       console.log(dataToSend)

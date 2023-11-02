@@ -66,9 +66,13 @@ def check_exitst_answer(file,data):
     #process_speech        
     audio_path = f'{PROCESS_SPEECH_RESULT_FOLDER}{file_name}/audio/'
     text_path = f'{PROCESS_SPEECH_RESULT_FOLDER}{file_name}/text/'
+    remark_path = f'{PROCESS_SPEECH_RESULT_FOLDER}{file_name}/remark/'
     if(os.path.exists(audio_path)):
         if (len(os.listdir(audio_path)) == len(os.listdir(text_path)) and os.listdir(text_path)!=0):
             data[file_name]['result']["process_speech"] = True
+    if(os.path.exists(remark_path)):
+        if(len(os.listdir(remark_path))>0):
+            data[file_name]['result']["remark"] = True
         
     #text
     if (os.path.exists(f'{TEXT_OUTPUT}{file_name}.txt')):
@@ -77,6 +81,7 @@ def check_exitst_answer(file,data):
     #emotion
     if (os.path.exists(f'{EMOTION_RESULT_FOLDER}{file_name}')):
         data[file_name]['result']["emotion"] = True
+        
         
     return data
 
@@ -121,6 +126,7 @@ def generate_process_speech_result(origin_text_file_path,singal_file_path,proces
             continue
         start_time = float(phrases['offsetInTicks'])/10000
         end_time  = start_time + float(phrases['durationInTicks'])/10000
+        
         # 切出特定时间段的音频
         segment = audio[start_time:end_time]
         segment.export(f"{process_speech_file_path}/audio/{count}.mp3", format="mp3")

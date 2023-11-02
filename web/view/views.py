@@ -24,6 +24,7 @@ TOKEN_PATH="/web/token.json"
 def azure():
     
     page_limit = 10
+    
     all_users=None
     
     user = User.query.filter_by(id=current_user.id).first()
@@ -34,6 +35,7 @@ def azure():
     
     if request.method == 'POST':
         select_user_id = request.json['select_user_id']     
+        page_limit = int(request.json['page_limit'])
     else:
         select_user_id = current_user.id
         
@@ -62,7 +64,7 @@ def azure():
         # edit 代表 辨識完的結果是否切割完成
         # text 代表 是否檢查過
         
-        data[file_name] = {'result':{'submit':False,"speech":False,"process_speech":False,'text':False,'emotion':False},'datetime':'',
+        data[file_name] = {'result':{'submit':False,"speech":False,"process_speech":False,'text':False,'emotion':False,'remark':False},'datetime':'',
                            'User':f'{User.query.filter_by(id=file.user_id).first().username}'}
         data[file_name]['datetime'] = f'{file.timestamp}'
         
@@ -109,7 +111,7 @@ def azure():
             data[file_name]['status'] = "NotYet" 
               
         elif(data[file_name]['result']["submit"] and (not data[file_name]['result']['speech'])):
-            data[file_name]['status'] = "Process Speech Waiting"    
+            data[file_name]['status'] = "Speech Identify Waiting"    
             
         elif(not data[file_name]['result']['text'] and data[file_name]['result']['process_speech']):
             data[file_name]['status'] = "Text Waiting"
@@ -123,7 +125,7 @@ def azure():
     return render_template('view/azure.html',data=data,file_list = file_list[(page_number-1)*page_limit:page_number*page_limit],
                            file_list_number=len(user_files),currentPage=page_number,user_list = all_users,
                            select_user_id = select_user_id,select_user_flag = select_user_flag,
-                           )
+                           page_limit=page_limit)
     
     
 @view_blueprint.route("/manage")

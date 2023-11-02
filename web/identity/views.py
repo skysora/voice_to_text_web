@@ -11,6 +11,7 @@ from web.models.models import File,User
 from flask_login import current_user, login_required
 from zhconv import convert
 from sqlalchemy import not_
+import zipfile
 
 identity_blueprint = Blueprint('identify', __name__, template_folder='templates')
 UPLOAD_FOLDER = '/web/data/signal/'
@@ -25,7 +26,7 @@ TOKEN_PATH="/web/token.json"
 @login_required
 def upload_file():
     # Iterate for each file in the files List, and Save them
-    files = request.files.getlist('files[]')
+    files = request.files.getlist('file')
     for file in files:
         # 本地端測試
         filename = file.filename
@@ -40,7 +41,6 @@ def upload_file():
             user_id=current_user.id  # Assuming your user model has an 'id' field
         )
         db.session.add(new_file)
-        upload_file_to_cloud(new_file)
     db.session.commit()
     return redirect(url_for('view.azure'))
       
@@ -133,7 +133,7 @@ def insert_file_idenitfy():
     file_name = request.args.get('name')
     select_user_id = request.args.get('select_user_id') 
     file = File.query.filter_by(title=file_name, user_id=select_user_id).first()
-    
+    upload_file_to_cloud(file)
     # SPEECH IDENTIFY
     submit_list=os.listdir(SUMIT_FOLDER)
     if(f'{file_name}.json' not in submit_list):
@@ -166,52 +166,64 @@ def speech_idenitfy(file_name):
         print("命令执行失败：")
         
 
-@identity_blueprint.route('/speech_idenitfy_download', methods=['get'])
+@identity_blueprint.route('/speech_idenitfy_download', methods=['GET','POST'])
 def speech_idenitfy_download():
     
-    file_name = request.args.get('name')
+    if request.method == 'GET':
+        file_list = [request.args.get('name')]
+    
+    if request.method == 'POST':
+        file_list = request.json['file_list'] 
         
-    file = File.query.filter_by(title=file_name, user_id=current_user.id).first()
     
+        
+    zip_file_path = f'{TEXT_OUTPUT}temp.zip'  
+    flag=0
+    with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for file_name in file_list:
+            output_file_path = f"{TEXT_OUTPUT}{file_name}.txt"
+            if os.path.exists(output_file_path):
+                zipf.write(output_file_path, os.path.basename(output_file_path))
+            else:
+                flag += 1
     
-    text_path = f"{file.process_speech_file_path}/text"
-    
-    if (not os.path.exists(f"{text_path}")):
-        return redirect(url_for('azure'))
-    
-    output_file_path = f"{TEXT_OUTPUT}{file_name}.txt"
-    # 打开输出文件以进行写入
-    with open(output_file_path, "w", encoding="utf-8") as output_file:
-        # 遍历指定目录下的所有文件
-        for filename in range(len(os.listdir(f"{text_path}"))):
-            
-            file_path = os.path.join(f"{text_path}", f'{filename}.txt')
-
-            # 打开并读取当前文本文件的内容
-            with open(file_path, "r", encoding="utf-8") as input_file:
-                file_contents = input_file.read()
-
-                # 将当前文本文件的内容写入输出文件
-                output_file.write(file_contents)
-                output_file.write("\n")  # 在每个文件的内容之间添加换行符
-    
-
-    return send_file(f'{output_file_path}',as_attachment=True)
-
-
-@identity_blueprint.route('/emotion_idenitfy_download', methods=['get'])
-def emotion_idenitfy_download():
-    file_name = request.args.get('name')
-    file = File.query.filter_by(title=file_name, user_id=current_user.id).first()
-    emotion_result_list=os.listdir(EMOTION_RESULT_FOLDER)
-    if(f'{file_name}' not in emotion_result_list):
-        return redirect(url_for('azure'))
+        
+    if(flag==len(file_list)):
+        return "error"
     else:
-        if(f'{file_name}.zip' not in emotion_result_list):
-            shutil.make_archive(f'{EMOTION_RESULT_FOLDER}{file_name}', 'zip', f'{EMOTION_RESULT_FOLDER}{file_name}')
+        return zip_file_path.replace('/web/data/','')
+
+
+def add_folder_to_zip(zipf, folder_path, base_folder):
+    for root, dirs, files in os.walk(folder_path):
+        for file_name in files:
+            file_path = os.path.join(root, file_name)
+            relative_path = os.path.relpath(file_path, base_folder)
+            zipf.write(file_path, arcname=relative_path)
+            
+@identity_blueprint.route('/emotion_idenitfy_download', methods=['GET','POST'])
+def emotion_idenitfy_download():
+    if request.method == 'GET':
+        file_list = [request.args.get('name')]
+    
+    if request.method == 'POST':
+        file_list = request.json['file_list'] 
         
-        
-    return send_file(f'{EMOTION_RESULT_FOLDER}{file_name}.zip',as_attachment=True)
+    zip_file_path = f'{EMOTION_RESULT_FOLDER}temp.zip'  
+    
+    flag=0
+    with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for folder_name in file_list:
+            folder_path = os.path.join(EMOTION_RESULT_FOLDER, folder_name)
+            if os.path.exists(folder_path) and os.path.isdir(folder_path):
+                add_folder_to_zip(zipf, folder_path, EMOTION_RESULT_FOLDER)
+            else:
+                flag += 1
+                
+    if(flag==len(file_list)):
+        return "error"
+    else:
+        return zip_file_path.replace('/web/data/','')
     
 @identity_blueprint.route('/text_file_generate', methods=['get'])
 def text_file_generate():
@@ -282,20 +294,32 @@ def edit():
 
     audio_path = f'{file.process_speech_file_path}/audio/'
     text_path = f'{file.process_speech_file_path}/text/'
-            
+    remark_path = f'{file.process_speech_file_path}/remark/'
+    
+    if(not os.path.exists(remark_path)):
+        os.mkdir(f'{remark_path}')  
     file_list=[]
     data={}
     for i in range(len(os.listdir(audio_path))):
+        remark_data = ""
+        text_data = ""
         file_list.append(f'{i}')
-        with open(f'{text_path}{i}.txt') as file_text:
-            try:
-                text_data = file_text.readlines()[0]
-            except:
-                text_data = ""
+        try:
+            with open(f'{text_path}{i}.txt') as file_text:
+                text_data = ''.join(file_text.readlines())
+        except:
+            pass
+           
+        try:     
+            if(os.path.exists(f'{remark_path}{i}.txt')):
+                with open(f'{remark_path}{i}.txt') as file_text:
+                    remark_data = ''.join(file_text.readlines())
+        except:     
+            pass
         
         
         audio = f"{audio_path}{i}.mp3".replace(f'/web/data/','')
-        data[f'{i}'] = {"text":convert(text_data, 'zh-tw'),"audio":f"{audio}"}
+        data[f'{i}'] = {"text":convert(text_data, 'zh-tw'),"audio":f"{audio}","remark":remark_data}
         
 
     return render_template('view/info.html',data=data,file_list=file_list,message="success",file_info=file_info,select_user_id=select_user_id)
@@ -305,6 +329,7 @@ def edit_file():
     data = request.json  # 解析JSON数据
     file_name = data.get('file_name')
     editedText = data.get('editedText')
+    editedRemark = data.get('editedRemark')
     pharses = data.get('pharses')
     select_user_id = data.get('select_user_id') 
     
@@ -312,10 +337,16 @@ def edit_file():
     file = File.query.filter_by(title=file_name, user_id=select_user_id).first()
 
     text_path = f'{file.process_speech_file_path}/text/{pharses}.txt'
+    remark_path = f'{file.process_speech_file_path}/remark/{pharses}.txt'
     
     with open(text_path, 'w', encoding='utf-8') as file:
-        file.write(editedText)
+        file.write(editedText.replace('\n',''))
+      
+    with open(remark_path, 'w', encoding='utf-8') as file:
+        file.write(editedRemark.replace('\n',''))
     
+    if(editedRemark.replace(' ','').replace('\n','') ==''):
+        os.remove(remark_path)
           
     return redirect(url_for('identify.edit', name=file_name,select_user_id=select_user_id))
 
