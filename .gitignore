@@ -1,7 +1,7 @@
 /web/region
 /web/key
-/web/test.ipynb
 /web/token.json
+/utils/*
 /web/data/*
 /web/emotionResult/*
 /web/speechResult/*

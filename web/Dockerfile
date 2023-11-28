@@ -27,7 +27,6 @@ RUN pip install -r /requirements.txt
 # 安裝其他Python庫
 COPY ./packages/flask-login /packages/flask-login
 RUN pip install /packages/flask-login
-RUN pip install matplotlib --no-cache-dir --force-reinstall
 # 安裝Microsoft.CognitiveServices.Speech.CLI工具
 RUN dotnet tool install --global Microsoft.CognitiveServices.Speech.CLI
 

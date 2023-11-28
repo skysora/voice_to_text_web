@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="apple-touch-icon" sizes="76x76" href="{{ url_for('static', filename='/assets/img/apple-icon.png') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='/assets/img/favicon.png') }}">
+    <title>
+        Shengeng 2023
+    </title>
+    <!--     Fonts and icons     -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,900|Roboto+Slab:400,700" />
+    <!-- Nucleo Icons -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='/assets/css/nucleo-icons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='/assets/css/nucleo-svg.css') }}">
+    <!-- Font Awesome Icons -->
+    <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <!-- CSS Files -->
+    <link id="pagestyle" href="{{ url_for('static', filename='/assets/css/material-dashboard.css') }}" rel="stylesheet" />
+    <!-- Nepcha Analytics (nepcha.com) -->
+    <!-- Nepcha is a easy-to-use web analytics. No cookies and fully compliant with GDPR, CCPA and PECR. -->
+    <script defer src="https://api.nepcha.com/js/nepcha-analytics.js"></script>
+    <!-- Include jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    
+    
+
+   <!-- Include DataTables CSS -->
+   <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">
+   <!-- Include DataTables JS -->
+   <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+   <!-- Other scripts can go here -->
+   <script defer src="https://api.nepcha.com/js/nepcha-analytics.js"></script>
+
+
+    <!-- Include DataTables Buttons CSS and JavaScript -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.1.1/css/buttons.dataTables.min.css">
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/2.1.1/js/dataTables.buttons.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/2.1.1/js/buttons.html5.min.js"></script>
+
+
+
+</head>
+<!-- bar -->
+<body class="g-sidenav-show  bg-gray-200">
+  {% include './component/sidebar.html' %}
+  <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg ">
+  <!-- Navbar -->
+  <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur" data-scroll="true">
+    <div class="container-fluid py-1 px-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+          <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">主要頁面</a></li>
+          <li class="breadcrumb-item text-sm text-dark active" aria-current="page">資料表</li>
+        </ol>
+      </nav>
+      <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
+        <div class="ms-md-auto pe-md-3 d-flex align-items-center">
+          
+        </div>
+        <ul class="navbar-nav  justify-content-end">
+          <li class="nav-item d-flex align-items-center">
+            <a class="nav-link text-body font-weight-bold px-0">
+              <i class="fa fa-user me-sm-1"></i>
+              <span class="d-sm-inline d-none">{{ current_user.username }}</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <!-- End Navbar -->
+  <div class="container-fluid py-4">
+    <!-- table -->
+    <div class="row mb-4">
+      <div class="col-lg-12 col-md-12 mb-md-12 mb-12">
+        <div class="card">
+          <!-- action -->
+          <div class="card-header pb-0">
+            <div class="row justify-content-between">
+              <div class="col-lg-6 col-6">
+                <h6>紀錄</h6>
+              </div> 
+            </div>
+          </div>
+          <!-- table -->
+          <div class="loader" id="loader" style="display: none;"></div>
+          <div id="datatable" class="card-body px-0 pb-2">
+            <div class="table-responsive p-0">
+                <table id="csvTable" class="display table align-items-center mb-0"></table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    {% include './component/footer.html' %}
+  </div>
+  </main>
+  <script>
+    $(document).ready(function() {
+      var table = $('#csvTable').DataTable({
+          "ajax": {
+              "url": '{{ url_for('view.table_json') }}',
+              "dataSrc": function(json) {
+                  console.log(json); // This will log the JSON array
+                  return json || []; // Fallback to an empty array if json is undefined
+              }
+          },
+          "columns": [
+              { "data": "id", "title": "ID" },
+              { "data": "頻道名稱", "title": "頻道名稱" },
+              { "data": "match", "title": "音檔是否上傳" },
+              { "data": "edit", "title": "是否確認辨識" },
+              { "data": "emotion", "title": "情緒辨識是否完成" },
+              { "data": "WAV檔名", "title": "WAV檔名" },
+              { "data": "影片發佈時間", "title": "影片發佈時間" },
+              { "data": "影片長度", "title": "影片長度" },
+              { "data": "影片連結", "title": "影片連結" }
+          ],
+          "dom": 'Bfrtip', // 'B' for buttons, 'f' for filtering, 'r' for processing display, 't' for the table, 'i' for the table information summary, 'p' for the pagination, and '1' for the first button
+          "buttons": [
+              'csv', // Add the CSV button for downloading data
+              'excel' // Add the Excel button for downloading data
+              // You can add more buttons or customize them as needed
+          ]
+      });
+    });
+    </script>
+
+  <!--   Core JS Files   -->
+  <script src="{{ url_for('static', filename='/assets/js/core/popper.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/assets/js/core/bootstrap.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/assets/js/plugins/perfect-scrollbar.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/assets/js/plugins/smooth-scrollbar.min.js') }}"></script>
+  
+  <!-- Github buttons -->
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
+  <script src="{{ url_for('static', filename='/assets/js/material-dashboard.min.js') }}"></script>
+  
+  
+
+</body>
+
+</html>

@@ -3,18 +3,26 @@ from flask import Flask
 from web.config import TestingConfig
 from web.database import db
 from web.login_manager import login_manager
-from web.auth import bctrypt
-from web.auth.views import auth_blueprint
-from web.view.views import view_blueprint
-from web.identity.views import identity_blueprint
-from web.models.models import User,UserRoleEnum
+from web.module.auth import bctrypt
+
+from web.module.auth.view import auth_blueprint
+from web.module.view.view import view_blueprint
+from web.module.file.view import file_blueprint
+from web.module.voice.view import voice_blueprint
+from web.module.emotion.view import emotion_blueprint
+
+
+
 from flask_migrate import Migrate
 
 app = Flask(__name__)
 app.config.from_object(TestingConfig) 
 app.register_blueprint(auth_blueprint)
 app.register_blueprint(view_blueprint)
-app.register_blueprint(identity_blueprint)
+app.register_blueprint(file_blueprint)
+app.register_blueprint(voice_blueprint)
+app.register_blueprint(emotion_blueprint)
+
 db.init_app(app) 
 bctrypt.init_app(app)
 login_manager.init_app(app)

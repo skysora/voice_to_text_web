@@ -40,10 +40,10 @@ class File(db.Model):
     origin_text_file_path = db.Column(db.String(30),default=None)
     #singal identity process path
     process_speech_file_path = db.Column(db.String(30),default=None)
-    #emotion identity result path
-    origin_emotion_file_path = db.Column(db.String(30),default=None)
     # edit text result path
     modified_text_file_path = db.Column(db.String(30),default=None)
+    #emotion identity result path
+    origin_emotion_file_path = db.Column(db.String(30),default=None)
     
     timestamp = db.Column(db.DateTime, default=datetime.now(pytz.timezone('Asia/Taipei')))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False,default=None)

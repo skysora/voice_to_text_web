@@ -10,3 +10,5 @@ hume
 opencc
 flask_migrate
 zhconv
+email-validator
+pandas

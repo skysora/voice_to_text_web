@@ -41,3 +41,6 @@ spx batch transcription list --api-version v3.1 --files --transcription 073a526d
 
 
 wget -O ./speechResult/IC0001W0086.wav.json "https://spsvcprodeus.blob.core.windows.net/bestor-c6e3ae79-1b48-41bf-92ff-940bea3e5c2d/TranscriptionData/2738e751-1760-4f29-93ff-582a5f8f44a6_0_0.json?skoid=50c6251a-ac54-47a3-9265-a1e4f84be9b9&sktid=33e01921-4d64-4f8c-a055-5bdaffd5e33d&skt=2023-10-11T10%3A05%3A51Z&ske=2023-10-16T10%3A10%3A51Z&sks=b&skv=2023-08-03&sv=2023-08-03&st=2023-10-11T10%3A05%3A51Z&se=2023-10-11T22%3A10%3A51Z&sr=b&sp=rl&sig=sGXlz0a4u%2FqgdfxZHjO41ftJeb5%2FUdRijAKV1xE%2FiN8%3D"
+
+
+python3 test.py --number 14

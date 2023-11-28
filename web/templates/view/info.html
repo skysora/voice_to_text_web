@@ -8,7 +8,7 @@
   <link rel="apple-touch-icon" sizes="76x76" href="{{ url_for('static', filename='/assets/img/apple-icon.png') }}">
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='/assets/img/favicon.png') }}">
   <title>
-    Material Dashboard 2 by Creative Tim
+    Shengeng 2023
   </title>
   <!--     Fonts and icons     -->
   <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,900|Roboto+Slab:400,700" />
@@ -80,7 +80,7 @@
                     <div class="d-flex align-items-center">
                         <h6>{{ file_info.file_name }}</h6>
                         <audio controls class="ms-3">
-                            <source src="{{ url_for('identify.data_directory', filename=file_info.audio) }}" type="audio/mpeg">
+                            <source src="{{ url_for('file.data_directory', filename=file_info.audio) }}" type="audio/mpeg">
                         </audio>
                     </div>
                 </div>
@@ -88,10 +88,10 @@
                   <td></td>
                   <td class="text-align: center; vertical-align: middle;">
                     <div class="d-flex justify-content-end align-items-center">
-                        <a href="{{ url_for('identify.edit', name=file_info.previous_file, select_user_id=select_user_id) }}" id="prevButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
+                        <a href="{{ url_for('voice.edit', id=file_info.previous_file, select_user_id=select_user_id) }}" id="prevButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
                             <i class="material-icons text-lg">chevron_left</i>
                         </a>
-                        <a href="{{ url_for('identify.edit', name=file_info.next_file, select_user_id=select_user_id) }}" id="nextButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
+                        <a href="{{ url_for('voice.edit', id=file_info.next_file, select_user_id=select_user_id) }}" id="nextButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
                             <i class="material-icons text-lg">chevron_right</i>
                         </a>
                     </div>
@@ -120,7 +120,7 @@
                           </td>
                           <td class="text-center">
                             <audio controls>
-                              <source src="{{ url_for('identify.data_directory', filename=data[pharses]['audio']) }}" type="audio/mpeg">
+                              <source src="{{ url_for('file.data_directory', filename=data[pharses]['audio']) }}" type="audio/mpeg">
                             </audio>
                           </td>
                           <!-- remark -->
@@ -135,16 +135,16 @@
                           <td></td>
                           <td class="text-align: center; vertical-align: middle;">
                             <div class="d-flex justify-content-end align-items-center">
-                              <a href="{{ url_for('identify.edit', name=file_info.previous_file, select_user_id=select_user_id) }}" id="prevButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
+                              <a href="{{ url_for('voice.edit', id=file_info.previous_file, select_user_id=select_user_id) }}" id="prevButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
                                   <i class="material-icons text-lg">chevron_left</i>
                               </a>
-                              <a href="{{ url_for('identify.edit', name=file_info.next_file, select_user_id=select_user_id) }}" id="nextButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
+                              <a href="{{ url_for('voice.edit', id=file_info.next_file, select_user_id=select_user_id) }}" id="nextButton" class="btn btn-icon-only btn-rounded btn-outline-dark mb-0 me-3 p-3 btn-sm d-flex align-items-center justify-content-center">
                                   <i class="material-icons text-lg">chevron_right</i>
                               </a>
                             </div>
                           </td>
                           <td>
-                            <a class="submit-button" href="{{ url_for('identify.text_file_generate', name=file_info.file_name, select_user_id=select_user_id) }}">儲存</a>
+                            <a class="submit-button" href="{{ url_for('voice.text_file_generate', id=file_info.id, select_user_id=select_user_id) }}">儲存</a>
                           </td>
                         </tr>
                       </tbody>
@@ -186,7 +186,7 @@
       var editedText = document.getElementById(pharses+"_text").textContent;
       var editedRemark = document.getElementById(pharses+"_remark").textContent;
       var dataToSend = {
-        file_name: '{{ file_info.file_name }}' , // 假设您希望将文件名传递给后端
+        file_id: '{{ file_info.id }}' , // 假设您希望将文件名传递给后端
         pharses:pharses,
         editedText: editedText,
         editedRemark: editedRemark,
@@ -194,7 +194,7 @@
       };
       console.log(dataToSend)
       $.ajax({
-        url: '{{ url_for('identify.edit_file') }}',
+        url: '{{ url_for('voice.edit_file') }}',
         method: 'POST',
         data: JSON.stringify(dataToSend), // 将数据转换为JSON字符串
         contentType: 'application/json', // 设置Content-Type为JSON
